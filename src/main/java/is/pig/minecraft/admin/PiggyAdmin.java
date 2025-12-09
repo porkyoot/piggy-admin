@@ -19,7 +19,7 @@ public class PiggyAdmin implements ModInitializer {
 		// However, some things (like resources) may still be uninitialized.
 		// Proceed with mild caution.
 
-		// LOGGER.info("Hello Fabric world!");
+		LOGGER.info("Ehlo from Piggy Admin!");
 
 		is.pig.minecraft.admin.config.PiggyServerConfig.load();
 
@@ -34,5 +34,10 @@ public class PiggyAdmin implements ModInitializer {
 			net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(handler.getPlayer(),
 					new is.pig.minecraft.lib.network.SyncConfigPayload(allowCheats, features));
 		});
+
+		net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback.EVENT
+				.register((dispatcher, registryAccess, environment) -> {
+					is.pig.minecraft.admin.command.PiggyAdminCommand.register(dispatcher);
+				});
 	}
 }

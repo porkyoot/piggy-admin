@@ -3,6 +3,8 @@ package is.pig.minecraft.admin.config;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.fabricmc.loader.api.FabricLoader;
+import is.pig.minecraft.lib.features.CheatFeature;
+import is.pig.minecraft.lib.features.CheatFeatureRegistry;
 
 import java.io.File;
 import java.io.FileReader;
@@ -36,8 +38,11 @@ public class PiggyServerConfig {
             }
         } else {
             INSTANCE = new PiggyServerConfig();
-            save();
         }
+
+        // Ensure all registered features exist in the config
+        INSTANCE.ensureAllFeatures();
+        save();
     }
 
     public static void save() {
@@ -45,6 +50,16 @@ public class PiggyServerConfig {
             GSON.toJson(INSTANCE, writer);
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * Ensures all registered features exist in the features map.
+     * Adds missing features with their default enabled state.
+     */
+    private void ensureAllFeatures() {
+        for (CheatFeature feature : CheatFeatureRegistry.getAllFeatures()) {
+            features.putIfAbsent(feature.id(), feature.defaultEnabled());
         }
     }
 }
