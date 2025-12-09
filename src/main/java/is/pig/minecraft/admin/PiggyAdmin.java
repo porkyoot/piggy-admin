@@ -24,13 +24,15 @@ public class PiggyAdmin implements ModInitializer {
 		is.pig.minecraft.admin.config.PiggyServerConfig.load();
 
 		net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playS2C().register(
-				is.pig.minecraft.admin.network.SyncConfigPayload.TYPE,
-				is.pig.minecraft.admin.network.SyncConfigPayload.CODEC);
+				is.pig.minecraft.lib.network.SyncConfigPayload.TYPE,
+				is.pig.minecraft.lib.network.SyncConfigPayload.CODEC);
 
 		net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
 			boolean allowCheats = is.pig.minecraft.admin.config.PiggyServerConfig.getInstance().allowCheats;
+			java.util.Map<String, Boolean> features = is.pig.minecraft.admin.config.PiggyServerConfig
+					.getInstance().features;
 			net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(handler.getPlayer(),
-					new is.pig.minecraft.admin.network.SyncConfigPayload(allowCheats));
+					new is.pig.minecraft.lib.network.SyncConfigPayload(allowCheats, features));
 		});
 	}
 }

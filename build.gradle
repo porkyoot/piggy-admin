@@ -32,7 +32,6 @@ loom {
 	mods {
 		"piggy-admin" {
 			sourceSet sourceSets.main
-			sourceSet sourceSets.client
 		}
 	}
 
@@ -54,6 +53,7 @@ dependencies {
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 	modImplementation "dev.isxander:yet-another-config-lib:${project.yacl_version}"
 	modImplementation("com.terraformersmc:modmenu:${project.modmenu_version}")
+    modImplementation "is.pig.minecraft:piggy-lib:1.0.0"
 }
 
 processResources {
