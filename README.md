@@ -1,10 +1,10 @@
-# Piggy Build
+# Piggy Admin
 
-A simple yet powerful mod designed to enhance your building experience in Minecraft. Piggy Build provides utilitarian features like directional placement, shape guides, and fast placement tools to make creative building smoother.
+Piggy Admin is a server-side administration mod designed to help manage and enforce settings for compatible client-side mods (like Piggy Build). Currently, it serves as a central point for managing anti-cheat options, but it will evolve to include more administration tools such as moderation and detection.
 
 ## ⚠️ Disclaimer
 
-**This is a personal project.** It comes **AS IS** and might destroy your stuff.
+**This is a personal project.** It comes **AS IS** and might cause issues.
 *   **No Support:** Do not expect regular support or bug fixes.
 *   **No Forge Port:** There are **NO** plans to port this mod to Forge.
 *   **Use at your own risk.**
@@ -15,69 +15,32 @@ Feel free to fork the project or submit a Pull Request if you want to contribute
 
 ## Features
 
-### 🛠️ Placement Helpers
-*   **Directional Placement**: Lock your placement direction relative to the block face. Handy for placing logs, pillars, o pistons in specific orientations without moving your character.
-*   **Diagonal Placement**: Easily place blocks diagonally, enabling faster construction of complex patterns.
-*   **Fast Placement**: Hold down the button to place blocks rapidly at a configurable speed.
-*   **Fast Breaking**: Creative-mode utility to break blocks faster.
-
-### 📐 Shape Guides
-*   **Shape Selectors**: detailed guides for placing blocks in specific shapes.
-    *   Lines
-    *   Spheres
-    *   Rings
-    *   Blocks (Cubes)
-
-### 🛡️ Safety & Anti-Cheat
-Piggy Build comes with a **"No Cheating Mode" enabled by default**.
-*   **Safety First**: This mode prevents you from using "cheat" features (Fast Place, Directional Placement, etc.) while in **Survival** or **Adventure** mode.
-*   **Fair Play**: Prevents accidental bans on servers that detect fast interaction frequencies.
-*   **Creative Freedom**: All features remain fully unlocked in Creative Mode.
+### 🛡️ Anti-Cheat Enforcement
+*   **Centralized Control**: Configure whether "cheat" features (like fast placement or flight in other Piggy mods) are allowed on your server.
+*   **Automatic Sync**: When a player joins, the server's anti-cheat configuration is automatically sent to their client.
+*   **Strict Enforcement**: If the server disables cheats, client-side overrides are ignored, ensuring fair play.
 
 ---
 
-## Screenshots
+## 🚀 Todo / Future Features
 
-![Directional Placement for bridging](media/bridge.png)
-
-![Diagonal Placement for stairs](media/diagonal.png)
-
-![Fast placement](media/fast.png)
-
-![Placing anchor block for not getting lost](media/anchor.png)
-
-![Circle guide](media/circle.png)
-
-![Sphere guide](media/sphere.png)
+- [ ] **Detect XRay**: Implement heuristics/checks to detect players using XRay texture packs or mods.
+- [ ] **Moderate Sign Text**: Add tools to inspect and filter text on signs to prevent inappropriate content.
 
 ---
 
-## How to Use
+## Configuration
 
-### Default Controls
-You can rebind these keys in the standard Minecraft Controls menu under "Piggy Build".
+The mod generates a configuration file at `config/piggy-admin-server.json` (server-side).
 
-| Action | Default Key | Description |
-| :--- | :--- | :--- |
-| **Shape Selector** | `X` | Opens the menu to select building shapes |
-| **Directional Placement** | `Mouse Button 5` | Locks placement orientation |
-| **Diagonal Placement** | `Mouse Button 4` | Toggles diagonal placement mode |
-| **Fast Block Placement** | `Mouse Button 6` | Activates rapid block placement |
+```json
+{
+  "allowCheats": false
+}
+```
 
-### Configuration
-Access the configuration menu via **Mod Menu**.
-
-*   **Highlight Color**: Customize the color of the shape guides.
-*   **Placement Overlay Color**: Change the color of the directional arrows/overlays.
-*   **Fast Place Speed**: Adjust the delay (in ms) between block placements.
-*   **Fast Place Toggle**: Enable/Disable fast placement globally.
-
-### 🖥️ For Server Owners
-You can install **Piggy Build** on the server to enforce anti-cheat rules for all connected clients.
-*   **Config File**: `config/piggy-build-server.json`
-*   **Enforcement**: Set `"allowCheats": false` to **force** the anti-cheat mode on all players.
-    *   This overrides client settings. Even if a player disables "No Cheating Mode", they will be blocked from using build tools in Survival.
-    *   Clients will receive a message: *"Anti-Cheat Active: This server has forced anti-cheat ON."*
+*   `"allowCheats": false`: Forces all connected clients to disable restricted features (e.g., Fast Place).
+*   `"allowCheats": true`: Allows clients to use their own local settings.
 
 ---
 
@@ -90,14 +53,14 @@ You can install **Piggy Build** on the server to enforce anti-cheat rules for al
 
 ### Required Mods
 *   **[Fabric API](https://modrinth.com/mod/fabric-api)**
-*   **[YACL (Yet Another Config Lib)](https://modrinth.com/mod/yacl)**
+*   **[YACL (Yet Another Config Lib)](https://modrinth.com/mod/yacl)** (Required for clients to view config)
 *   *(Optional)* **[Mod Menu](https://modrinth.com/mod/modmenu)** - Highly recommended for accessing config.
 
 ### Installation
 1.  Download the `.jar` file.
 2.  Install Fabric Loader for Minecraft 1.21.1.
-3.  Place the `piggy-build` jar (along with Fabric API and YACL) into your `.minecraft/mods` folder.
-4.  Launch the game!
+3.  Place the `piggy-admin` jar (along with Fabric API) into your `.minecraft/mods` folder (or server `mods` folder).
+4.  Launch the game/server!
 
 ---
 
