@@ -31,8 +31,9 @@ public class PiggyAdmin implements ModInitializer {
 			boolean allowCheats = is.pig.minecraft.admin.config.PiggyServerConfig.getInstance().allowCheats;
 			java.util.Map<String, Boolean> features = is.pig.minecraft.admin.config.PiggyServerConfig
 					.getInstance().features;
-			net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(handler.getPlayer(),
-					new is.pig.minecraft.lib.network.SyncConfigPayload(allowCheats, features));
+			is.pig.minecraft.lib.network.SyncConfigPayload payload = new is.pig.minecraft.lib.network.SyncConfigPayload(allowCheats, features);
+			net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(handler.getPlayer(), payload);
+			LOGGER.info("[ANTI-CHEAT DEBUG] Sent SyncConfigPayload to player {} on join: allowCheats={}, features={}", handler.getPlayer().getName().getString(), allowCheats, features);
 		});
 
 		net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback.EVENT

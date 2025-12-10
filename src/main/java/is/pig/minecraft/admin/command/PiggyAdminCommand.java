@@ -151,6 +151,7 @@ public class PiggyAdminCommand {
 
         for (var player : context.getSource().getServer().getPlayerList().getPlayers()) {
             ServerPlayNetworking.send(player, payload);
+            is.pig.minecraft.admin.PiggyAdmin.LOGGER.info("[ANTI-CHEAT DEBUG] Sent SyncConfigPayload to player {} (command sync): allowCheats={}, features={}", player.getName().getString(), config.allowCheats, features);
         }
     }
 }

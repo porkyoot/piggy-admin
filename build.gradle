@@ -1,106 +1,43 @@
-plugins {
-	id 'fabric-loom' version "${loom_version}"
-	id 'maven-publish'
-}
-
-version = project.mod_version
-group = project.maven_group
+// Pas de bloc 'plugins', c'est géré par la racine
 
 base {
-	archivesName = project.archives_base_name
-}
-
-repositories {
-	// Add repositories to retrieve artifacts from in here.
-	// You should only use this when depending on other mods because
-	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
-	// for more information about repositories.
-	mavenLocal()
-	maven {
-        name 'Xander Maven'
-        url 'https://maven.isxander.dev/releases'
-    }
-	maven {
-		name = "Terraformers"
-		url = "https://maven.terraformersmc.com/"
-	}
+    // IMPORTANT : On met le nom en dur ici, plus de variable 'project.archives_base_name'
+    archivesName = "piggy-admin"
 }
 
 loom {
-	splitEnvironmentSourceSets()
+    splitEnvironmentSourceSets()
 
-	mods {
-		"piggy-admin" {
-			sourceSet sourceSets.main
-		}
-	}
-
+    mods {
+        // Ici on définit l'ID unique du mod
+        "piggy-admin" {
+            sourceSet sourceSets.main
+        }
+    }
 }
 
+// Configuration spécifique au DataGen de ce mod
 fabricApi {
-	configureDataGeneration {
-		client = true
-	}
+    configureDataGeneration {
+        client = true
+    }
 }
 
 dependencies {
-	// To change the versions see the gradle.properties file
-	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings loom.officialMojangMappings()
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    // Note : Minecraft, Mappings, Loader et Fabric API sont hérités du fichier racine.
+    // On ne met ici que les extras.
 
-	// Fabric API. This is technically optional, but you probably want it anyway.
-	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-	modImplementation "dev.isxander:yet-another-config-lib:${project.yacl_version}"
-	modImplementation("com.terraformersmc:modmenu:${project.modmenu_version}")
-	
-	// Use project dependency for local mod
-	modImplementation project(path: ':piggy-lib', configuration: 'namedElements')
-}
-
-processResources {
-	inputs.property "version", project.version
-
-	filesMatching("fabric.mod.json") {
-		expand "version": inputs.properties.version
-	}
-}
-
-tasks.withType(JavaCompile).configureEach {
-	it.options.release = 21
-}
-
-java {
-	// Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-	// if it is present.
-	// If you remove this line, sources will not be generated.
-	withSourcesJar()
-
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
-}
-
-jar {
-	inputs.property "archivesName", project.base.archivesName
-
-	from("LICENSE") {
-		rename { "${it}_${inputs.properties.archivesName}"}
-	}
-}
-
-// configure the maven publication
-publishing {
-	publications {
-		create("mavenJava", MavenPublication) {
-			artifactId = project.archives_base_name
-			from components.java
-		}
-	}
-
-	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
-	repositories {
-		// Publish to mavenLocal so other projects can find this mod
-		mavenLocal()
-	}
+    // Dépendances spécifiques
+    modImplementation "dev.isxander:yet-another-config-lib:${project.yacl_version}"
+    modImplementation "com.terraformersmc:modmenu:${project.modmenu_version}"
+    
+    // --- LA PARTIE IMPORTANTE : La liaison avec Piggy Lib ---
+    
+    // 1. Pour la compilation (utilise les sources, pas le jar)
+    implementation project(path: ':piggy-lib', configuration: 'namedElements')
+    
+    // 2. (Optionnel) Pour que Piggy Lib soit inclus DANS le fichier jar final de Piggy Admin
+    // Utile si les joueurs n'installent que Piggy Admin et que vous voulez que la lib suive.
+    // Si Piggy Lib est un mod à part entière que les gens téléchargent séparément, retirez cette ligne.
+    include project(':piggy-lib')
 }
