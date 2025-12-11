@@ -3,6 +3,7 @@
 	"package": "is.pig.minecraft.admin.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
+		"ServerGamePacketListenerImplMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
