@@ -1,10 +1,12 @@
 package is.pig.minecraft.admin;
 
+import is.pig.minecraft.admin.anticheat.XRayDetector; // Import
 import is.pig.minecraft.admin.storage.HistoryManager;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents; // Import
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
-import net.fabricmc.loader.api.FabricLoader; // Import FabricLoader
-import net.minecraft.server.players.ServerOpListEntry; // Import OpEntry
+import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.server.players.ServerOpListEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,24 +19,20 @@ public class PiggyAdmin implements ModInitializer {
         LOGGER.info("Ehlo from Piggy Admin!");
 
         is.pig.minecraft.admin.config.PiggyServerConfig.load();
-        HistoryManager.load(); // Load history
+        HistoryManager.load();
 
         net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playS2C().register(
                 is.pig.minecraft.lib.network.SyncConfigPayload.TYPE,
                 is.pig.minecraft.lib.network.SyncConfigPayload.CODEC);
 
         net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-            // --- DEBUG: AUTO OP ---
-            // Only runs in dev environment (VSCode), safe for production builds
             if (FabricLoader.getInstance().isDevelopmentEnvironment()) {
                 if (!server.getPlayerList().isOp(handler.getPlayer().getGameProfile())) {
                     server.getPlayerList().getOps().add(new ServerOpListEntry(handler.getPlayer().getGameProfile(), 4, false));
-                    // Refresh commands so they get OP permissions immediately
                     server.getCommands().sendCommands(handler.getPlayer());
                     LOGGER.info("[Debug] Auto-opped player: " + handler.getPlayer().getName().getString());
                 }
             }
-            // ----------------------
 
             boolean allowCheats = is.pig.minecraft.admin.config.PiggyServerConfig.getInstance().allowCheats;
             java.util.Map<String, Boolean> features = is.pig.minecraft.admin.config.PiggyServerConfig
@@ -52,6 +50,13 @@ public class PiggyAdmin implements ModInitializer {
         ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
             if (sender != null) {
                 HistoryManager.logChat(sender.getName().getString(), sender.getUUID(), message.signedContent());
+            }
+        });
+        
+        // --- REGISTER XRAY DETECTOR ---
+        PlayerBlockBreakEvents.AFTER.register((world, player, pos, state, blockEntity) -> {
+            if (!world.isClientSide()) {
+                XRayDetector.onBlockBreak((net.minecraft.server.level.ServerPlayer) player, pos, state);
             }
         });
     }

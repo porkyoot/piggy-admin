@@ -19,6 +19,12 @@ public class PiggyServerConfig {
     private static PiggyServerConfig INSTANCE;
 
     public boolean allowCheats = true;
+    
+    // --- XRay Configuration ---
+    public boolean xrayCheck = true;
+    public float xrayMaxRatio = 0.15f; // 15% Rare vs (Rare+Common)
+    public int xrayMinBlocks = 20;     // Minimum blocks in window before checking
+    
     public java.util.Map<String, Boolean> features = new java.util.HashMap<>();
 
     public static PiggyServerConfig getInstance() {
@@ -40,7 +46,6 @@ public class PiggyServerConfig {
             INSTANCE = new PiggyServerConfig();
         }
 
-        // Ensure all registered features exist in the config
         INSTANCE.ensureAllFeatures();
         save();
     }
@@ -53,10 +58,6 @@ public class PiggyServerConfig {
         }
     }
 
-    /**
-     * Ensures all registered features exist in the features map.
-     * Adds missing features with their default enabled state.
-     */
     private void ensureAllFeatures() {
         for (CheatFeature feature : CheatFeatureRegistry.getAllFeatures()) {
             features.putIfAbsent(feature.id(), feature.defaultEnabled());
