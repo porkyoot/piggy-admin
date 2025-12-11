@@ -10,21 +10,41 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: checkout repository
+      # 1. Checkout Master Project with Dependencies
+      - name: Checkout Master Project
         uses: actions/checkout@v4
-      - name: validate gradle wrapper
+        with:
+          repository: porkyoot/piggy-mods
+          submodules: true # Critical for fetching piggy-lib
+          path: .
+
+      # 2. Checkout the specific Mod code
+      - name: Checkout Submodule (Current)
+        uses: actions/checkout@v4
+        with:
+          # CHANGE THIS: Folder name (e.g., piggy-admin)
+          path: piggy-admin
+
+      - name: Validate Gradle Wrapper
         uses: gradle/actions/wrapper-validation@v4
-      - name: setup jdk
+
+      - name: Setup JDK
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'microsoft'
-      - name: make gradle wrapper executable
+
+      - name: Make Gradle Wrapper Executable
         run: chmod +x ./gradlew
-      - name: build
-        run: ./gradlew build
-      - name: release
+
+      # 3. Build only this mod
+      # CHANGE THIS: Gradle project name (e.g., :piggy-admin:build)
+      - name: Build
+        run: ./gradlew :piggy-admin:build
+
+      - name: Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: build/libs/*.jar
+          # CHANGE THIS: Path to the built jar
+          files: piggy-admin/build/libs/*.jar
