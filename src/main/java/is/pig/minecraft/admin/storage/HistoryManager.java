@@ -13,6 +13,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -76,7 +77,6 @@ public class HistoryManager {
     }
 
     public static HistoryEntry getSignInfo(String worldId, BlockPos pos) {
-        // Search backwards to find the most recent edit at this location
         List<HistoryEntry> reversed = new ArrayList<>(history);
         Collections.reverse(reversed);
         
@@ -90,5 +90,12 @@ public class HistoryManager {
             }
         }
         return null;
+    }
+
+    // NEW METHOD: Returns a Set of all unique player names in the history
+    public static Set<String> getKnownPlayerNames() {
+        return history.stream()
+                .map(entry -> entry.playerName)
+                .collect(Collectors.toSet());
     }
 }

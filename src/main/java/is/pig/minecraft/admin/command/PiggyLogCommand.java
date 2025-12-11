@@ -3,6 +3,7 @@ package is.pig.minecraft.admin.command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.suggestion.SuggestionProvider; // Import
 import is.pig.minecraft.admin.storage.HistoryEntry;
 import is.pig.minecraft.admin.storage.HistoryManager;
 import net.minecraft.ChatFormatting;
@@ -12,7 +13,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
-import net.minecraft.network.chat.MutableComponent; // Import MutableComponent
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -20,6 +21,15 @@ import net.minecraft.world.phys.HitResult;
 import java.util.List;
 
 public class PiggyLogCommand {
+
+    // NEW: Suggestion Provider that fetches names from HistoryManager
+    private static final SuggestionProvider<CommandSourceStack> HISTORY_PLAYER_SUGGESTIONS = (context, builder) -> {
+        for (String name : HistoryManager.getKnownPlayerNames()) {
+            // Suggest every name found in the history
+            builder.suggest(name);
+        }
+        return builder.buildFuture();
+    };
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("blame")
@@ -29,6 +39,7 @@ public class PiggyLogCommand {
         dispatcher.register(Commands.literal("logs")
                 .requires(source -> source.hasPermission(2))
                 .then(Commands.argument("player_name", StringArgumentType.word())
+                        .suggests(HISTORY_PLAYER_SUGGESTIONS) // Apply suggestions here
                         .executes(PiggyLogCommand::showLogs)));
     }
 
@@ -77,28 +88,23 @@ public class PiggyLogCommand {
         for (int i = start; i < entries.size(); i++) {
             HistoryEntry e = entries.get(i);
             String actionTag = (e.type == HistoryEntry.Type.CHAT) ? "CHAT" : "SIGN";
-            ChatFormatting tagColor = (e.type == HistoryEntry.Type.CHAT) ? ChatFormatting.GREEN : ChatFormatting.YELLOW;
             
-            // USE MutableComponent HERE so we can chain .append() later
             MutableComponent logLine = Component.literal("")
                     .append(Component.literal("[" + e.timestamp + "] ").withStyle(ChatFormatting.DARK_GRAY))
                     .append(Component.literal("<" + e.playerName + "> ").withStyle(ChatFormatting.GRAY));
 
-            // USE MutableComponent HERE so we can call .withStyle() on it later
-            MutableComponent tagComponent = Component.literal("[" + actionTag + "]").withStyle(tagColor);
+            MutableComponent tagComponent = Component.literal("[" + actionTag + "]").withStyle(ChatFormatting.YELLOW);
             
             if (e.type == HistoryEntry.Type.SIGN && e.worldId != null) {
                 String tpCmd = String.format("/tp %s %d %d %d", targetName, e.x, e.y, e.z);
                 String hoverText = String.format("%s: %d, %d, %d", e.worldId, e.x, e.y, e.z);
                 
-                // Now this works because tagComponent is MutableComponent
                 tagComponent = tagComponent.withStyle(style -> style
                         .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, tpCmd))
                         .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(hoverText)))
                         .withUnderlined(true));
             }
 
-            // Now this works because logLine is MutableComponent
             logLine = logLine.append(tagComponent)
                              .append(Component.literal(" " + e.content).withStyle(ChatFormatting.WHITE));
 
