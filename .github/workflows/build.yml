@@ -5,24 +5,19 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     steps:
-      # 1. Checkout the Master Project (piggy-mods)
-      # We enable 'submodules: true' here. 
-      # This is the FIX: It ensures 'piggy-lib' is downloaded so other mods can compile against it.
+      # 1. Checkout Master Project
       - name: Checkout Master Project
         uses: actions/checkout@v4
         with:
           repository: porkyoot/piggy-mods
-          submodules: true 
+          submodules: true
           path: .
 
-      # 2. Checkout the CURRENT submodule code
-      # This overwrites the specific folder (e.g. piggy-admin) in the master project
-      # with the fresh code from this commit.
+      # 2. Checkout THIS Mod (piggy-admin)
       - name: Checkout Submodule (Current)
         uses: actions/checkout@v4
         with:
-          # CHANGE THIS: Match the folder name in piggy-mods (e.g., piggy-admin, piggy-inventory)
-          path: piggy-admin 
+          path: piggy-admin
 
       - name: Validate Gradle Wrapper
         uses: gradle/actions/wrapper-validation@v4
@@ -36,13 +31,18 @@ jobs:
       - name: Make Gradle Wrapper Executable
         run: chmod +x ./gradlew
 
-      # 3. Run the build for THIS specific project only
-      # CHANGE THIS: Update the project name (e.g., :piggy-admin:build)
+      # 3. FIX: Exclude unrelated modules from settings.gradle
+      # This prevents Gradle from configuring 'piggy-build', avoiding the crash.
+      - name: Isolate Project
+        run: |
+          sed -i "/include 'piggy-build'/d" settings.gradle
+          sed -i "/include 'piggy-inventory'/d" settings.gradle
+          # We keep 'piggy-lib' because piggy-admin needs it.
+
+      # 4. Build
       - name: Build
         run: ./gradlew :piggy-admin:build
 
-      # 4. Upload Artifacts
-      # CHANGE THIS: Path to the specific module's build folder
       - name: Capture Build Artifacts
         uses: actions/upload-artifact@v4
         with:
