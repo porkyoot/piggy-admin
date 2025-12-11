@@ -30,7 +30,6 @@ jobs:
         run: chmod +x ./gradlew
 
       # FIX: Rewrite settings.gradle to strictly include ONLY what we need.
-      # This effectively ignores 'piggy-build', 'piggy-inventory', or any future broken mods.
       - name: Isolate Project Dependencies
         run: |
           cat <<EOF > settings.gradle
