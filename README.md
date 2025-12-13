@@ -1,3 +1,5 @@
+[![build](https://github.com/porkyoot/piggy-admin/actions/workflows/build.yml/badge.svg)](https://github.com/porkyoot/piggy-admin/actions/workflows/build.yml)
+
 # Piggy Admin
 
 Piggy Admin is a server-side administration mod designed to help manage and enforce settings for compatible client-side mods (like Piggy Build). Currently, it serves as a central point for managing anti-cheat options, but it will evolve to include more administration tools such as moderation and detection.
