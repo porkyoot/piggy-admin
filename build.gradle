@@ -2,15 +2,7 @@ base {
     archivesName = "piggy-admin"
 }
 
-loom {
-    splitEnvironmentSourceSets()
 
-    mods {
-        "piggy-admin" {
-            sourceSet sourceSets.main
-        }
-    }
-}
 
 fabricApi {
     configureDataGeneration {
@@ -24,5 +16,5 @@ dependencies {
     
     implementation project(path: ':piggy-lib', configuration: 'namedElements')
     
-    include project(':piggy-lib')
+    //include project(':piggy-lib')
 }
