@@ -20,11 +20,35 @@ Feel free to fork the project or submit a Pull Request if you want to contribute
 *   **Automatic Sync**: When a player joins, the server's anti-cheat configuration is automatically sent to their client.
 *   **Strict Enforcement**: If the server disables cheats, client-side overrides are ignored, ensuring fair play.
 
+### 🕵️ X-Ray Detection
+*   **Heuristic Detection**: The server monitors mining patterns to detect suspicious behavior.
+*   **Ratio Analysis**: Calculates the ratio of rare ores (Diamond, Ancient Debris) mined versus common blocks (Stone, Netherrack).
+*   **Alerts**: Admins are notified if a player's mining ratio exceeds the configured threshold.
+
+### 📜 History & Logging
+*   **Sign History**: Tracks who placed a sign and what was written on it.
+*   **Chat History**: Logs all chat messages for administrative review.
+*   **Blame Tool**: inspect existing blocks to see who interacted with them.
+
+---
+
+## 💻 Commands
+
+### General Administration
+*   `/piggy cheats <allow|forbid>`: Globally allow or forbid "cheat" features (like Fast Place) for all players.
+*   `/piggy feature list`: List all controllable features and their current status.
+*   `/piggy feature <id> <enable|disable>`: Enable or disable a specific feature (e.g., `fast_place`) for all players.
+
+### Investigation & Logging
+*   `/blame`: Look at a block (e.g., a sign) and run this command to see who placed/modified it and when.
+*   `/logs <player_name>`: View the recent chat and sign history for a specific player.
+    *   **Clickable Coordinates**: Sign logs include coordinates that you can click to teleport to.
+
 ---
 
 ## 🚀 Todo / Future Features
 
-- [ ] **Detect XRay**: Implement heuristics/checks to detect players using XRay texture packs or mods.
+- [x] **Detect XRay**: Implement heuristics/checks to detect players using XRay texture packs or mods.
 - [ ] **Moderate Sign Text**: Add tools to inspect and filter text on signs to prevent inappropriate content.
 
 ---
