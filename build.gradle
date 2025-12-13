@@ -1,7 +1,4 @@
-// Pas de bloc 'plugins', c'est géré par la racine
-
 base {
-    // IMPORTANT : On met le nom en dur ici, plus de variable 'project.archives_base_name'
     archivesName = "piggy-admin"
 }
 
@@ -9,14 +6,12 @@ loom {
     splitEnvironmentSourceSets()
 
     mods {
-        // Ici on définit l'ID unique du mod
         "piggy-admin" {
             sourceSet sourceSets.main
         }
     }
 }
 
-// Configuration spécifique au DataGen de ce mod
 fabricApi {
     configureDataGeneration {
         client = true
@@ -24,20 +19,10 @@ fabricApi {
 }
 
 dependencies {
-    // Note : Minecraft, Mappings, Loader et Fabric API sont hérités du fichier racine.
-    // On ne met ici que les extras.
-
-    // Dépendances spécifiques
     modImplementation "dev.isxander:yet-another-config-lib:${project.yacl_version}"
     modImplementation "com.terraformersmc:modmenu:${project.modmenu_version}"
     
-    // --- LA PARTIE IMPORTANTE : La liaison avec Piggy Lib ---
+    implementation project(':piggy-lib')
     
-    // 1. Pour la compilation (utilise les sources, pas le jar)
-    implementation project(path: ':piggy-lib', configuration: 'namedElements')
-    
-    // 2. (Optionnel) Pour que Piggy Lib soit inclus DANS le fichier jar final de Piggy Admin
-    // Utile si les joueurs n'installent que Piggy Admin et que vous voulez que la lib suive.
-    // Si Piggy Lib est un mod à part entière que les gens téléchargent séparément, retirez cette ligne.
     include project(':piggy-lib')
 }
