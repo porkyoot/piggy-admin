@@ -5,8 +5,8 @@ import is.pig.minecraft.admin.storage.HistoryManager;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents; // Import
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
-import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.server.players.ServerOpListEntry;
+// import net.fabricmc.loader.api.FabricLoader;
+// import net.minecraft.server.players.ServerOpListEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,13 +26,13 @@ public class PiggyAdmin implements ModInitializer {
                 is.pig.minecraft.lib.network.SyncConfigPayload.CODEC);
 
         net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-            if (FabricLoader.getInstance().isDevelopmentEnvironment()) {
-                if (!server.getPlayerList().isOp(handler.getPlayer().getGameProfile())) {
-                    server.getPlayerList().getOps().add(new ServerOpListEntry(handler.getPlayer().getGameProfile(), 4, false));
-                    server.getCommands().sendCommands(handler.getPlayer());
-                    LOGGER.info("[Debug] Auto-opped player: " + handler.getPlayer().getName().getString());
-                }
-            }
+            // if (FabricLoader.getInstance().isDevelopmentEnvironment()) {
+            //     if (!server.getPlayerList().isOp(handler.getPlayer().getGameProfile())) {
+            //         server.getPlayerList().getOps().add(new ServerOpListEntry(handler.getPlayer().getGameProfile(), 4, false));
+            //         server.getCommands().sendCommands(handler.getPlayer());
+            //         LOGGER.info("[Debug] Auto-opped player: " + handler.getPlayer().getName().getString());
+            //     }
+            // }
 
             boolean allowCheats = is.pig.minecraft.admin.config.PiggyServerConfig.getInstance().allowCheats;
             java.util.Map<String, Boolean> features = is.pig.minecraft.admin.config.PiggyServerConfig

@@ -106,8 +106,7 @@ The mod generates a configuration file at `config/piggy-admin-server.json` (serv
 ## Todo / Future Features
 
 - [x] **Detect XRay**: Implement heuristics/checks to detect players using XRay texture packs or mods.
-- [ ] **Moderate Sign Text**: Add tools to inspect and filter text on signs to prevent inappropriate content.
-- [ ] **Block Interaction Logging**: Track who broke/placed specific blocks.
+- [X] **Moderate Sign Text**: Add tools to inspect and filter text on signs to prevent inappropriate content.
 
 ---
 
