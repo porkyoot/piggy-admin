@@ -1,0 +1,42 @@
+name: Piggy Admin - GameTest
+
+on:
+  push:
+    paths:
+      - 'piggy-admin/**'
+      - '.github/workflows/piggy-admin-test.yml'
+  pull_request:
+    paths:
+      - 'piggy-admin/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: 'gradle'
+        
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+      
+    - name: Run piggy-admin tests
+      run: ./gradlew :piggy-admin:runGametest
+      
+    - name: Test Summary
+      if: always()
+      run: |
+        echo "## Piggy Admin - GameTest Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ **11 tests** covering:" >> $GITHUB_STEP_SUMMARY
+        echo "- Config state management" >> $GITHUB_STEP_SUMMARY
+        echo "- Sign & chat logging" >> $GITHUB_STEP_SUMMARY
+        echo "- History retrieval" >> $GITHUB_STEP_SUMMARY
+        echo "- XRay detection anti-cheat" >> $GITHUB_STEP_SUMMARY

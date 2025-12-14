@@ -1,3 +1,5 @@
+package is.pig.minecraft.admin.test;
+
 import is.pig.minecraft.admin.config.PiggyServerConfig;
 import is.pig.minecraft.admin.storage.HistoryEntry;
 import is.pig.minecraft.admin.storage.HistoryManager;
