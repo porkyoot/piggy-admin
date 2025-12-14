@@ -1,13 +1,5 @@
-name: Piggy Admin - GameTest
-
-on:
-  push:
-    paths:
-      - 'piggy-admin/**'
-      - '.github/workflows/piggy-admin-test.yml'
-  pull_request:
-    paths:
-      - 'piggy-admin/**'
+name: test
+on: [pull_request, push]
 
 jobs:
   test:
