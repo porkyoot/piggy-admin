@@ -1,5 +1,3 @@
-package is.pig.minecraft.admin.test;
-
 import is.pig.minecraft.admin.config.PiggyServerConfig;
 import is.pig.minecraft.admin.storage.HistoryEntry;
 import is.pig.minecraft.admin.storage.HistoryManager;
@@ -7,7 +5,6 @@ import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
