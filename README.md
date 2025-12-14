@@ -1,5 +1,6 @@
 [![build](https://github.com/porkyoot/piggy-admin/actions/workflows/build.yml/badge.svg)](https://github.com/porkyoot/piggy-admin/actions/workflows/build.yml)
 [![test](https://github.com/porkyoot/piggy-admin/actions/workflows/test.yml/badge.svg)](https://github.com/porkyoot/piggy-admin/actions/workflows/test.yml)
+[![release](https://img.shields.io/github/v/release/porkyoot/piggy-admin)](https://github.com/porkyoot/piggy-admin/releases)
 
 # Piggy Admin
 
