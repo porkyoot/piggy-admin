@@ -112,7 +112,8 @@ The mod generates a configuration file at `config/piggy-admin-server.json` (serv
 
 ## Inspiration
 
-<!-- Projects that inspired this mod will be listed here -->
+This mod was inspired by:
+- **[ItemSwapper](https://modrinth.com/plugin/itemswapper)** - For the concept of server-side item management and swapping mechanics.
 
 ---
 
