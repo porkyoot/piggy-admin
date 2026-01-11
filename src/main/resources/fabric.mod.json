@@ -20,9 +20,6 @@
 		],
 		"fabric-datagen": [
 			"is.pig.minecraft.admin.PiggyAdminDataGenerator"
-		],
-		"fabric-gametest": [
-			"is.pig.minecraft.admin.test.PiggyAdminTests"
 		]
 	},
 	"mixins": [

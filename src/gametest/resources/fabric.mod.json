@@ -1,0 +1,19 @@
+{
+    "schemaVersion": 1,
+    "id": "piggy-admin-test",
+    "version": "${version}",
+    "name": "Piggy Admin Tests",
+    "environment": "*",
+    "entrypoints": {
+        "fabric-gametest": [
+            "is.pig.minecraft.admin.test.PiggyAdminTests"
+        ]
+    },
+    "depends": {
+        "piggy-admin": "*",
+        "fabricloader": ">=0.18.1",
+        "minecraft": "~1.21.1",
+        "java": ">=21",
+        "fabric-api": "*"
+    }
+}
