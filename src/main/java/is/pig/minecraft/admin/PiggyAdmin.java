@@ -27,17 +27,18 @@ public class PiggyAdmin implements ModInitializer {
 
         net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             // if (FabricLoader.getInstance().isDevelopmentEnvironment()) {
-            //     if (!server.getPlayerList().isOp(handler.getPlayer().getGameProfile())) {
-            //         server.getPlayerList().getOps().add(new ServerOpListEntry(handler.getPlayer().getGameProfile(), 4, false));
-            //         server.getCommands().sendCommands(handler.getPlayer());
-            //         LOGGER.info("[Debug] Auto-opped player: " + handler.getPlayer().getName().getString());
-            //     }
+            // if (!server.getPlayerList().isOp(handler.getPlayer().getGameProfile())) {
+            // server.getPlayerList().getOps().add(new
+            // ServerOpListEntry(handler.getPlayer().getGameProfile(), 4, false));
+            // server.getCommands().sendCommands(handler.getPlayer());
+            // }
             // }
 
             boolean allowCheats = is.pig.minecraft.admin.config.PiggyServerConfig.getInstance().allowCheats;
             java.util.Map<String, Boolean> features = is.pig.minecraft.admin.config.PiggyServerConfig
                     .getInstance().features;
-            is.pig.minecraft.lib.network.SyncConfigPayload payload = new is.pig.minecraft.lib.network.SyncConfigPayload(allowCheats, features);
+            is.pig.minecraft.lib.network.SyncConfigPayload payload = new is.pig.minecraft.lib.network.SyncConfigPayload(
+                    allowCheats, features);
             net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(handler.getPlayer(), payload);
         });
 
@@ -52,7 +53,7 @@ public class PiggyAdmin implements ModInitializer {
                 HistoryManager.logChat(sender.getName().getString(), sender.getUUID(), message.signedContent());
             }
         });
-        
+
         // --- REGISTER XRAY DETECTOR ---
         PlayerBlockBreakEvents.AFTER.register((world, player, pos, state, blockEntity) -> {
             if (!world.isClientSide()) {
