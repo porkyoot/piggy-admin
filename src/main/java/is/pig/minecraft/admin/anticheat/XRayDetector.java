@@ -37,6 +37,9 @@ public class XRayDetector {
         PiggyServerConfig config = PiggyServerConfig.getInstance();
         if (!config.xrayCheck) return;
 
+        // Ignore blocks mined above y=64
+        if (pos.getY() > 64) return;
+
         Block block = state.getBlock();
         boolean isRare = isRareOre(block);
         boolean isCommon = isCommonBlock(block);
