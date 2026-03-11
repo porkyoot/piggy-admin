@@ -27,8 +27,9 @@ public class AdminNotifier {
         // 2. Build In-Game Component
         Style whisperStyle = Style.EMPTY.withColor(ChatFormatting.GRAY).withItalic(true);
 
-        String tpCommand = String.format("/tp %s %d %d %d", player.getName().getString(), at.getX(), at.getY(), at.getZ());
-        String coordsText = String.format("%s: %d, %d, %d", player.serverLevel().dimension().location().toString(), at.getX(), at.getY(), at.getZ());
+        String dimension = player.serverLevel().dimension().location().toString();
+        String tpCommand = String.format("/execute in %s run tp @s %d %d %d", dimension, at.getX(), at.getY(), at.getZ());
+        String coordsText = String.format("%s: %d, %d, %d", dimension, at.getX(), at.getY(), at.getZ());
 
         // Use MutableComponent
         MutableComponent message = Component.literal("")

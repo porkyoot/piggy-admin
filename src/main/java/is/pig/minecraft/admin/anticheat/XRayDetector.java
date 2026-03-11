@@ -30,8 +30,8 @@ public class XRayDetector {
     // Stores history per player
     private static final Map<UUID, Deque<MineEvent>> playerHistory = new HashMap<>();
     
-    // Window size in milliseconds (2 minutes)
-    private static final long TIME_WINDOW_MS = 2 * 60 * 1000;
+    // Window size in milliseconds (5 minutes)
+    private static final long TIME_WINDOW_MS = 5 * 60 * 1000;
 
     public static void onBlockBreak(ServerPlayer player, BlockPos pos, BlockState state) {
         PiggyServerConfig config = PiggyServerConfig.getInstance();
@@ -113,7 +113,13 @@ public class XRayDetector {
     private static boolean isRareOre(Block block) {
         return block == Blocks.DIAMOND_ORE || 
                block == Blocks.DEEPSLATE_DIAMOND_ORE || 
-               block == Blocks.ANCIENT_DEBRIS;
+               block == Blocks.ANCIENT_DEBRIS ||
+               block == Blocks.IRON_ORE ||
+               block == Blocks.DEEPSLATE_IRON_ORE ||
+               block == Blocks.GOLD_ORE ||
+               block == Blocks.DEEPSLATE_GOLD_ORE ||
+               block == Blocks.EMERALD_ORE ||
+               block == Blocks.DEEPSLATE_EMERALD_ORE;
     }
 
     private static boolean isCommonBlock(Block block) {

@@ -23,7 +23,9 @@ public class BlockItemMixin {
         if (cir.getReturnValue().consumesAction() && context.getPlayer() instanceof ServerPlayer player) {
             Block block = ((BlockItem) (Object) this).getBlock();
             boolean isTnt = block == Blocks.TNT;
-            if (isTnt) {
+            boolean isBedExplosion = block instanceof net.minecraft.world.level.block.BedBlock && !player.serverLevel().dimensionType().bedWorks();
+
+            if (isTnt || isBedExplosion) {
                 BlockPos pos = context.getClickedPos();
                 String worldId = player.serverLevel().dimension().location().toString();
                 String action = player.getName().getString() + " placed " + block.getName().getString();
