@@ -24,6 +24,32 @@ public class HistoryManager {
 
     private static List<HistoryEntry> history = new ArrayList<>();
 
+    public static void logTnt(String playerName, UUID uuid, String action, String worldId, BlockPos pos) {
+        HistoryEntry entry = new HistoryEntry(
+                LocalDateTime.now().format(TIME_FORMATTER),
+                playerName,
+                uuid,
+                HistoryEntry.Type.TNT,
+                action
+        );
+        entry.setLocation(worldId, pos.getX(), pos.getY(), pos.getZ());
+        history.add(entry);
+        save();
+    }
+
+    public static void logExplosion(String source, String details, String worldId, BlockPos pos) {
+        HistoryEntry entry = new HistoryEntry(
+                LocalDateTime.now().format(TIME_FORMATTER),
+                source,
+                null, // Source might not be a player
+                HistoryEntry.Type.EXPLOSION,
+                details
+        );
+        entry.setLocation(worldId, pos.getX(), pos.getY(), pos.getZ());
+        history.add(entry);
+        save();
+    }
+
     public static void load() {
         if (HISTORY_FILE.exists()) {
             try (FileReader reader = new FileReader(HISTORY_FILE)) {
@@ -77,12 +103,19 @@ public class HistoryManager {
     }
 
     public static HistoryEntry getSignInfo(String worldId, BlockPos pos) {
+        return getBlockInfo(worldId, pos, HistoryEntry.Type.SIGN);
+    }
+
+    public static HistoryEntry getBlockInfo(String worldId, BlockPos pos, HistoryEntry.Type... types) {
         List<HistoryEntry> reversed = new ArrayList<>(history);
         Collections.reverse(reversed);
         
+        java.util.Set<HistoryEntry.Type> typeSet = java.util.EnumSet.noneOf(HistoryEntry.Type.class);
+        for (HistoryEntry.Type t : types) typeSet.add(t);
+
         for (HistoryEntry entry : reversed) {
-            if (entry.type == HistoryEntry.Type.SIGN &&
-                entry.worldId.equals(worldId) &&
+            if (typeSet.contains(entry.type) &&
+                entry.worldId != null && entry.worldId.equals(worldId) &&
                 entry.x == pos.getX() &&
                 entry.y == pos.getY() &&
                 entry.z == pos.getZ()) {

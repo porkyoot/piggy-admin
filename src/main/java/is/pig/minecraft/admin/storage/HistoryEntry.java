@@ -4,7 +4,7 @@ import java.util.UUID;
 
 public class HistoryEntry {
     public enum Type {
-        CHAT, SIGN
+        CHAT, SIGN, TNT, EXPLOSION
     }
 
     public String timestamp;
@@ -22,7 +22,7 @@ public class HistoryEntry {
     public HistoryEntry(String timestamp, String playerName, UUID playerUuid, Type type, String content) {
         this.timestamp = timestamp;
         this.playerName = playerName;
-        this.playerUuid = playerUuid.toString();
+        this.playerUuid = playerUuid != null ? playerUuid.toString() : null;
         this.type = type;
         this.content = content;
     }

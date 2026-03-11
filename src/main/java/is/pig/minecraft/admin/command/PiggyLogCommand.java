@@ -34,7 +34,7 @@ public class PiggyLogCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("blame")
                 .requires(source -> source.hasPermission(2))
-                .executes(PiggyLogCommand::blameSign));
+                .executes(PiggyLogCommand::blameBlock));
 
         dispatcher.register(Commands.literal("logs")
                 .requires(source -> source.hasPermission(2))
@@ -43,7 +43,7 @@ public class PiggyLogCommand {
                         .executes(PiggyLogCommand::showLogs)));
     }
 
-    private static int blameSign(CommandContext<CommandSourceStack> context) {
+    private static int blameBlock(CommandContext<CommandSourceStack> context) {
         Entity entity = context.getSource().getEntity();
         if (entity == null) {
             context.getSource().sendFailure(Component.literal("Player only command."));
@@ -59,13 +59,14 @@ public class PiggyLogCommand {
         BlockPos pos = ((BlockHitResult) hit).getBlockPos();
         String worldId = entity.level().dimension().location().toString();
 
-        HistoryEntry entry = HistoryManager.getSignInfo(worldId, pos);
+        HistoryEntry entry = HistoryManager.getBlockInfo(worldId, pos, HistoryEntry.Type.SIGN, HistoryEntry.Type.TNT);
 
         if (entry == null) {
             context.getSource().sendFailure(Component.literal("No history for this block."));
         } else {
+            String typeLabel = (entry.type == HistoryEntry.Type.SIGN) ? "Sign" : "TNT/Rail";
             context.getSource().sendSuccess(() -> Component.literal("")
-                    .append(Component.literal("Sign Blame: ").withStyle(ChatFormatting.GOLD))
+                    .append(Component.literal(typeLabel + " Blame: ").withStyle(ChatFormatting.GOLD))
                     .append(Component.literal(entry.playerName).withStyle(ChatFormatting.RED))
                     .append(Component.literal(" @ " + entry.timestamp).withStyle(ChatFormatting.GRAY))
                     .append(Component.literal(" -> " + entry.content).withStyle(ChatFormatting.WHITE)), false);
@@ -87,7 +88,7 @@ public class PiggyLogCommand {
         int start = Math.max(0, entries.size() - 10);
         for (int i = start; i < entries.size(); i++) {
             HistoryEntry e = entries.get(i);
-            String actionTag = (e.type == HistoryEntry.Type.CHAT) ? "CHAT" : "SIGN";
+            String actionTag = e.type.name();
             
             MutableComponent logLine = Component.literal("")
                     .append(Component.literal("[" + e.timestamp + "] ").withStyle(ChatFormatting.DARK_GRAY))
@@ -95,7 +96,7 @@ public class PiggyLogCommand {
 
             MutableComponent tagComponent = Component.literal("[" + actionTag + "]").withStyle(ChatFormatting.YELLOW);
             
-            if (e.type == HistoryEntry.Type.SIGN && e.worldId != null) {
+            if ((e.type == HistoryEntry.Type.SIGN || e.type == HistoryEntry.Type.TNT) && e.worldId != null) {
                 String tpCmd = String.format("/tp %s %d %d %d", targetName, e.x, e.y, e.z);
                 String hoverText = String.format("%s: %d, %d, %d", e.worldId, e.x, e.y, e.z);
                 
