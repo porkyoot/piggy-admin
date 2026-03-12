@@ -9,7 +9,10 @@ import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.ChatFormatting;
 import is.pig.minecraft.admin.config.PiggyServerConfig;
+import is.pig.minecraft.admin.network.SyncModerationPayload;
 import is.pig.minecraft.lib.network.SyncConfigPayload;
+
+
 import is.pig.minecraft.lib.features.CheatFeature;
 import is.pig.minecraft.lib.features.CheatFeatureRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -34,6 +37,9 @@ public class PiggyAdminCommand {
                                                                 .executes(ctx -> setCheats(ctx, true)))
                                                 .then(Commands.literal("forbid")
                                                                 .executes(ctx -> setCheats(ctx, false))))
+                                .then(Commands.literal("reload")
+                                                .executes(PiggyAdminCommand::reloadConfig))
+
                                 .then(Commands.literal("feature")
                                                 .then(Commands.literal("list")
                                                                 .executes(PiggyAdminCommand::listFeatures))
@@ -158,13 +164,26 @@ public class PiggyAdminCommand {
                 return 1;
         }
 
+
+        private static int reloadConfig(CommandContext<CommandSourceStack> context) {
+                PiggyServerConfig.load();
+                is.pig.minecraft.admin.moderation.ModerationEngine.getInstance().reload();
+                syncToAllPlayers(context);
+                context.getSource().sendSuccess(() -> Component.literal("Piggy Admin config reloaded from disk and synced."), true);
+                return 1;
+        }
+
         private static void syncToAllPlayers(CommandContext<CommandSourceStack> context) {
                 PiggyServerConfig config = PiggyServerConfig.getInstance();
                 Map<String, Boolean> features = config.features;
                 SyncConfigPayload payload = new SyncConfigPayload(config.allowCheats, features);
+                
+                SyncModerationPayload modPayload = new SyncModerationPayload(config.moderationEnabled, config.moderationRules);
 
                 for (var player : context.getSource().getServer().getPlayerList().getPlayers()) {
                         ServerPlayNetworking.send(player, payload);
+                        ServerPlayNetworking.send(player, modPayload);
                 }
         }
 }
+

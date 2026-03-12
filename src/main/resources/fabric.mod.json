@@ -18,9 +18,16 @@
 		"main": [
 			"is.pig.minecraft.admin.PiggyAdmin"
 		],
+		"client": [
+			"is.pig.minecraft.admin.client.PiggyAdminClient"
+		],
+		"modmenu": [
+			"is.pig.minecraft.admin.integration.ModMenuIntegration"
+		],
 		"fabric-datagen": [
 			"is.pig.minecraft.admin.PiggyAdminDataGenerator"
 		]
+
 	},
 	"mixins": [
 		"piggy-admin.mixins.json"

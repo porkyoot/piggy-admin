@@ -27,6 +27,25 @@ public class PiggyServerConfig {
     
     public java.util.Map<String, Boolean> features = new java.util.HashMap<>();
 
+    // --- Moderation Configuration ---
+    public boolean moderationEnabled = true;
+    public java.util.List<ModerationRule> moderationRules = new java.util.ArrayList<>();
+
+    public static class ModerationRule {
+        public String category; // e.g., Slurs, Swears, Politics
+        public String language; // e.g., en, fr, all
+        public String regex;
+        public boolean enabled = true;
+
+        public ModerationRule() {}
+
+        public ModerationRule(String category, String language, String regex) {
+            this.category = category;
+            this.language = language;
+            this.regex = regex;
+        }
+    }
+
     public static PiggyServerConfig getInstance() {
         if (INSTANCE == null) {
             load();
@@ -47,6 +66,7 @@ public class PiggyServerConfig {
         }
 
         INSTANCE.ensureAllFeatures();
+        INSTANCE.ensureDefaultModerationRules();
         save();
     }
 
@@ -63,4 +83,13 @@ public class PiggyServerConfig {
             features.putIfAbsent(feature.id(), feature.defaultEnabled());
         }
     }
+
+    private void ensureDefaultModerationRules() {
+        if (moderationRules.isEmpty()) {
+            System.out.println("[PiggyAdmin] Adding default moderation rules...");
+            moderationRules.add(new ModerationRule("Swears", "all", "(?i)\\b(fuck|shit|asshole)\\b"));
+            moderationRules.add(new ModerationRule("Dox", "all", "\\b\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\b")); // IP regex
+        }
+    }
+
 }
