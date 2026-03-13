@@ -42,6 +42,22 @@ Feel free to fork the project or submit a Pull Request if you want to contribute
 *   **Hybrid Checking**: Combines fast local **Regex** checks with deep semantic analysis from Gemini.
 *   **Categorized Logs**: All blocked messages are logged with their specific category for easy review.
 
+### 🤖 Gemini AI Setup
+To use the AI moderation features, you need a Google Gemini API Key.
+
+1.  **Get an API Key**: Visit the **[Google AI Studio](https://aistudio.google.com/app/apikey)** and create a free API key.
+2.  **Configure the Mod**:
+    *   Start the server once to generate the config file.
+    *   Open `config/piggy-admin-server.json`.
+    *   Paste your key into the `"geminiApiKey"` field.
+    *   Set `"moderationEnabled": true`.
+3.  **Advanced Options**:
+    *   `geminiModel`: defaults to `gemini-1.5-flash` (recommended for speed and cost).
+    *   `geminiSystemPrompt`: You can customize the AI's "personality" and strictness here.
+
+> [!NOTE]
+> The free tier of Gemini has rate limits (approx. 15 requests per minute). The mod includes a built-in cache and rate-limiter to handle these limits gracefully without lagging the server.
+
 ### 📜 History & Logging
 *   **Sign History**: Tracks who placed a sign and what was written on it.
 *   **Chat History**: Logs all chat messages for administrative review.
