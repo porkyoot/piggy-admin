@@ -27,18 +27,19 @@ public class PiggyAdminConfigScreenFactory {
                                 .build())
                         .group(ListOption.<String>createBuilder()
                                 .name(Component.literal("Moderation Rules"))
-                                .description(OptionDescription.of(Component.literal("Format: Category|Language|Regex (e.g., Slurs|en|(?i)badword)")))
+                                .description(OptionDescription.of(Component.literal("Format: Category|Language|Regex (e.g., SWEARS|en|(?i)badword)")))
                                 .binding(
-                                        config.moderationRules.stream().map(r -> r.category + "|" + r.language + "|" + r.regex).toList(),
-                                        () -> config.moderationRules.stream().map(r -> r.category + "|" + r.language + "|" + r.regex).toList(),
+                                        config.moderationRules.stream().map(r -> r.category.name() + "|" + r.language + "|" + r.regex).toList(),
+                                        () -> config.moderationRules.stream().map(r -> r.category.name() + "|" + r.language + "|" + r.regex).toList(),
                                         v -> {
                                             config.moderationRules.clear();
                                             for (String s : v) {
                                                 String[] parts = s.split("\\|", 3);
                                                 if (parts.length == 3) {
-                                                    config.moderationRules.add(new PiggyServerConfig.ModerationRule(parts[0], parts[1], parts[2]));
-                                                } else if (parts.length == 1) {
-                                                     config.moderationRules.add(new PiggyServerConfig.ModerationRule("General", "all", parts[0]));
+                                                    is.pig.minecraft.admin.moderation.ModerationCategory category = is.pig.minecraft.admin.moderation.ModerationCategory.fromString(parts[0]);
+                                                    config.moderationRules.add(new PiggyServerConfig.ModerationRule(category, parts[1], parts[2]));
+                                                } else if (parts.length == 1 && !parts[0].isEmpty()) {
+                                                     config.moderationRules.add(new PiggyServerConfig.ModerationRule(is.pig.minecraft.admin.moderation.ModerationCategory.OTHER, "all", parts[0]));
                                                 }
                                             }
                                         }
@@ -46,7 +47,26 @@ public class PiggyAdminConfigScreenFactory {
                                 .controller(StringControllerBuilder::create)
                                 .initial("")
                                 .build())
-
+                        .group(OptionGroup.createBuilder()
+                                .name(Component.literal("Gemini AI Moderation"))
+                                .option(Option.<String>createBuilder()
+                                        .name(Component.literal("Gemini API Key"))
+                                        .description(OptionDescription.of(Component.literal("Your Gemini API Key from Google AI Studio.")))
+                                        .binding("YOUR_GEMINI_API_KEY_HERE", () -> config.geminiApiKey, v -> config.geminiApiKey = v)
+                                        .controller(StringControllerBuilder::create)
+                                        .build())
+                                .option(Option.<String>createBuilder()
+                                        .name(Component.literal("System Prompt"))
+                                        .description(OptionDescription.of(Component.literal("Instruction for the AI moderator.")))
+                                        .binding("", () -> config.geminiSystemPrompt, v -> config.geminiSystemPrompt = v)
+                                        .controller(StringControllerBuilder::create)
+                                        .build())
+                                .option(Option.<String>createBuilder()
+                                        .name(Component.literal("Model Name"))
+                                        .binding("gemini-2.0-flash", () -> config.geminiModel, v -> config.geminiModel = v)
+                                        .controller(StringControllerBuilder::create)
+                                        .build())
+                                .build())
                         .build())
                 .category(ConfigCategory.createBuilder()
                         .name(Component.literal("Anti-Cheat"))
@@ -91,7 +111,10 @@ public class PiggyAdminConfigScreenFactory {
                             config.moderationRules,
                             config.xrayCheck,
                             config.xrayMaxRatio,
-                            config.xrayMinBlocks
+                            config.xrayMinBlocks,
+                            config.geminiApiKey,
+                            config.geminiSystemPrompt,
+                            config.geminiModel
                         );
                         net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(payload);
                     }

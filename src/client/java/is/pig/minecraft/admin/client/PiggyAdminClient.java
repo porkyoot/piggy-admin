@@ -1,6 +1,5 @@
 package is.pig.minecraft.admin.client;
 
-import is.pig.minecraft.admin.config.PiggyAdminConfigScreenFactory;
 import is.pig.minecraft.admin.config.PiggyServerConfig;
 import is.pig.minecraft.admin.network.SyncModerationPayload;
 import is.pig.minecraft.admin.network.UpdateAdminConfigPayload;
@@ -38,7 +37,10 @@ public class PiggyAdminClient implements ClientModInitializer {
                                 config.moderationRules,
                                 config.xrayCheck,
                                 config.xrayMaxRatio,
-                                config.xrayMinBlocks
+                                config.xrayMinBlocks,
+                                config.geminiApiKey,
+                                config.geminiSystemPrompt,
+                                config.geminiModel
                             );
                             ClientPlayNetworking.send(payload);
                             context.getSource().sendFeedback(Component.literal("§aConfig synced to server."));

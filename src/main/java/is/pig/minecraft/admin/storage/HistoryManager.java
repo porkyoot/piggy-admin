@@ -1,5 +1,6 @@
 package is.pig.minecraft.admin.storage;
 
+import is.pig.minecraft.admin.moderation.ModerationCategory;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -79,6 +80,18 @@ public class HistoryManager {
                 HistoryEntry.Type.CHAT,
                 message
         );
+        history.add(entry);
+        save();
+    }
+
+    public static void logBlock(String playerName, UUID uuid, String message, ModerationCategory category) {
+        HistoryEntry entry = new HistoryEntry(
+                LocalDateTime.now().format(TIME_FORMATTER),
+                playerName,
+                uuid,
+                HistoryEntry.Type.BLOCK,
+                message
+        ).setCategory(category);
         history.add(entry);
         save();
     }

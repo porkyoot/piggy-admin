@@ -1,10 +1,11 @@
 package is.pig.minecraft.admin.storage;
 
+import is.pig.minecraft.admin.moderation.ModerationCategory;
 import java.util.UUID;
 
 public class HistoryEntry {
     public enum Type {
-        CHAT, SIGN, TNT, EXPLOSION
+        CHAT, SIGN, TNT, EXPLOSION, BLOCK
     }
 
     public String timestamp;
@@ -12,6 +13,7 @@ public class HistoryEntry {
     public String playerUuid;
     public Type type;
     public String content;
+    public ModerationCategory category; // Category for BLOCK result
     
     // Location data (only relevant for SIGN type)
     public String worldId;
@@ -25,6 +27,11 @@ public class HistoryEntry {
         this.playerUuid = playerUuid != null ? playerUuid.toString() : null;
         this.type = type;
         this.content = content;
+    }
+
+    public HistoryEntry setCategory(ModerationCategory category) {
+        this.category = category;
+        return this;
     }
 
     public void setLocation(String worldId, int x, int y, int z) {

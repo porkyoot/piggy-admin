@@ -1,6 +1,7 @@
 package is.pig.minecraft.admin.network;
 
 import is.pig.minecraft.admin.config.PiggyServerConfig;
+import is.pig.minecraft.admin.moderation.ModerationCategory;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -10,7 +11,13 @@ import net.minecraft.resources.ResourceLocation;
 import java.util.List;
 
 
-public record SyncModerationPayload(boolean enabled, List<PiggyServerConfig.ModerationRule> rules) implements CustomPacketPayload {
+public record SyncModerationPayload(
+    boolean enabled, 
+    List<PiggyServerConfig.ModerationRule> rules,
+    String geminiApiKey,
+    String geminiSystemPrompt,
+    String geminiModel
+) implements CustomPacketPayload {
     public static final Type<SyncModerationPayload> TYPE = new Type<>(
             ResourceLocation.fromNamespaceAndPath("piggy-admin", "sync_moderation"));
 
@@ -20,24 +27,30 @@ public record SyncModerationPayload(boolean enabled, List<PiggyServerConfig.Mode
 
     public SyncModerationPayload(FriendlyByteBuf buf) {
         this(buf.readBoolean(), buf.readList(b -> {
-            String category = b.readUtf();
+            ModerationCategory category = ModerationCategory.fromString(b.readUtf());
             String language = b.readUtf();
             String regex = b.readUtf();
             boolean enabledRule = b.readBoolean();
             PiggyServerConfig.ModerationRule rule = new PiggyServerConfig.ModerationRule(category, language, regex);
             rule.enabled = enabledRule;
             return rule;
-        }));
+        }),
+        buf.readUtf(),
+        buf.readUtf(),
+        buf.readUtf());
     }
 
     public void write(FriendlyByteBuf buf) {
         buf.writeBoolean(enabled);
         buf.writeCollection(rules, (b, rule) -> {
-            b.writeUtf(rule.category);
+            b.writeUtf(rule.category.name());
             b.writeUtf(rule.language);
             b.writeUtf(rule.regex);
             b.writeBoolean(rule.enabled);
         });
+        buf.writeUtf(geminiApiKey);
+        buf.writeUtf(geminiSystemPrompt);
+        buf.writeUtf(geminiModel);
     }
 
     @Override

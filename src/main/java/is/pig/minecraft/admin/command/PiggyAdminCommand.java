@@ -178,7 +178,13 @@ public class PiggyAdminCommand {
                 Map<String, Boolean> features = config.features;
                 SyncConfigPayload payload = new SyncConfigPayload(config.allowCheats, features);
                 
-                SyncModerationPayload modPayload = new SyncModerationPayload(config.moderationEnabled, config.moderationRules);
+                SyncModerationPayload modPayload = new SyncModerationPayload(
+                        config.moderationEnabled, 
+                        config.moderationRules,
+                        config.geminiApiKey,
+                        config.geminiSystemPrompt,
+                        config.geminiModel
+                );
 
                 for (var player : context.getSource().getServer().getPlayerList().getPlayers()) {
                         ServerPlayNetworking.send(player, payload);

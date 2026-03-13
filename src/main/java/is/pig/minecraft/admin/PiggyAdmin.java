@@ -48,7 +48,10 @@ public class PiggyAdmin implements ModInitializer {
             // Sync moderation
             SyncModerationPayload modPayload = new SyncModerationPayload(
                 is.pig.minecraft.admin.config.PiggyServerConfig.getInstance().moderationEnabled,
-                is.pig.minecraft.admin.config.PiggyServerConfig.getInstance().moderationRules
+                is.pig.minecraft.admin.config.PiggyServerConfig.getInstance().moderationRules,
+                is.pig.minecraft.admin.config.PiggyServerConfig.getInstance().geminiApiKey,
+                is.pig.minecraft.admin.config.PiggyServerConfig.getInstance().geminiSystemPrompt,
+                is.pig.minecraft.admin.config.PiggyServerConfig.getInstance().geminiModel
             );
             net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(handler.getPlayer(), modPayload);
         });
@@ -69,6 +72,9 @@ public class PiggyAdmin implements ModInitializer {
                 config.xrayCheck = payload.xrayCheck();
                 config.xrayMaxRatio = payload.xrayMaxRatio();
                 config.xrayMinBlocks = payload.xrayMinBlocks();
+                config.geminiApiKey = payload.geminiApiKey();
+                config.geminiSystemPrompt = payload.geminiSystemPrompt();
+                config.geminiModel = payload.geminiModel();
                 
                 is.pig.minecraft.admin.config.PiggyServerConfig.save();
                 is.pig.minecraft.admin.moderation.ModerationEngine.getInstance().reload();
@@ -78,7 +84,8 @@ public class PiggyAdmin implements ModInitializer {
                     config.allowCheats, config.features
                 );
                 SyncModerationPayload modPayload = new SyncModerationPayload(
-                    config.moderationEnabled, config.moderationRules
+                    config.moderationEnabled, config.moderationRules,
+                    config.geminiApiKey, config.geminiSystemPrompt, config.geminiModel
                 );
                 
                 for (var player : context.server().getPlayerList().getPlayers()) {

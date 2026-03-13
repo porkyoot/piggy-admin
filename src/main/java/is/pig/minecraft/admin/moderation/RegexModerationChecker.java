@@ -32,15 +32,15 @@ public class RegexModerationChecker implements ModerationChecker {
     }
 
     @Override
-    public CompletableFuture<Boolean> check(ServerPlayer player, String message) {
+    public CompletableFuture<ModerationResult> check(ServerPlayer player, String message) {
         return CompletableFuture.supplyAsync(() -> {
             for (CompiledRule rule : compiledRules) {
                 if (rule.pattern.matcher(message).find()) {
                     System.out.println("[RegexModeration] Match found for category " + rule.category + ": " + message);
-                    return true;
+                    return ModerationResult.blocked(rule.category, "Regex match: " + rule.category);
                 }
             }
-            return false;
+            return ModerationResult.SAFE;
         });
     }
 
@@ -50,5 +50,5 @@ public class RegexModerationChecker implements ModerationChecker {
         return "Regex";
     }
 
-    private record CompiledRule(String category, Pattern pattern) {}
+    private record CompiledRule(ModerationCategory category, Pattern pattern) {}
 }

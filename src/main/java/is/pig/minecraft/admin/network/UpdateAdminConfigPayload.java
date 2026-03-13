@@ -1,6 +1,7 @@
 package is.pig.minecraft.admin.network;
 
 import is.pig.minecraft.admin.config.PiggyServerConfig;
+import is.pig.minecraft.admin.moderation.ModerationCategory;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -17,7 +18,10 @@ public record UpdateAdminConfigPayload(
         List<PiggyServerConfig.ModerationRule> moderationRules,
         boolean xrayCheck,
         float xrayMaxRatio,
-        int xrayMinBlocks
+        int xrayMinBlocks,
+        String geminiApiKey,
+        String geminiSystemPrompt,
+        String geminiModel
 ) implements CustomPacketPayload {
     public static final Type<UpdateAdminConfigPayload> TYPE = new Type<>(
             ResourceLocation.fromNamespaceAndPath("piggy-admin", "update_admin_config"));
@@ -32,7 +36,7 @@ public record UpdateAdminConfigPayload(
                 buf.readMap(FriendlyByteBuf::readUtf, FriendlyByteBuf::readBoolean),
                 buf.readBoolean(),
                 buf.readList(b -> {
-                    String category = b.readUtf();
+                    ModerationCategory category = ModerationCategory.fromString(b.readUtf());
                     String language = b.readUtf();
                     String regex = b.readUtf();
                     boolean enabledRule = b.readBoolean();
@@ -42,7 +46,10 @@ public record UpdateAdminConfigPayload(
                 }),
                 buf.readBoolean(),
                 buf.readFloat(),
-                buf.readInt()
+                buf.readInt(),
+                buf.readUtf(),
+                buf.readUtf(),
+                buf.readUtf()
         );
     }
 
@@ -51,7 +58,7 @@ public record UpdateAdminConfigPayload(
         buf.writeMap(features, FriendlyByteBuf::writeUtf, FriendlyByteBuf::writeBoolean);
         buf.writeBoolean(moderationEnabled);
         buf.writeCollection(moderationRules, (b, rule) -> {
-            b.writeUtf(rule.category);
+            b.writeUtf(rule.category.name());
             b.writeUtf(rule.language);
             b.writeUtf(rule.regex);
             b.writeBoolean(rule.enabled);
@@ -59,6 +66,9 @@ public record UpdateAdminConfigPayload(
         buf.writeBoolean(xrayCheck);
         buf.writeFloat(xrayMaxRatio);
         buf.writeInt(xrayMinBlocks);
+        buf.writeUtf(geminiApiKey);
+        buf.writeUtf(geminiSystemPrompt);
+        buf.writeUtf(geminiModel);
     }
 
     @Override

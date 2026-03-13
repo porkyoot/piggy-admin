@@ -11,9 +11,9 @@ public interface ModerationChecker {
      * Checks if a message should be blocked.
      * @param player The player who sent the message.
      * @param message The message content.
-     * @return A CompletableFuture that completes with true if the message should be BLOCKED, false otherwise.
+     * @return A CompletableFuture that completes with the ModerationResult indicating the outcome of the check.
      */
-    CompletableFuture<Boolean> check(ServerPlayer player, String message);
+    CompletableFuture<ModerationResult> check(ServerPlayer player, String message);
 
     /**
      * @return The name of this checker.

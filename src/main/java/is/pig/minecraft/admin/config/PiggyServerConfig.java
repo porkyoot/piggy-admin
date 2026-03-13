@@ -2,6 +2,7 @@ package is.pig.minecraft.admin.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import is.pig.minecraft.admin.moderation.ModerationCategory;
 import net.fabricmc.loader.api.FabricLoader;
 import is.pig.minecraft.lib.features.CheatFeature;
 import is.pig.minecraft.lib.features.CheatFeatureRegistry;
@@ -14,7 +15,28 @@ import java.io.IOException;
 public class PiggyServerConfig {
     private static final File CONFIG_FILE = FabricLoader.getInstance().getConfigDir().resolve("piggy-admin-server.json")
             .toFile();
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final Gson GSON = new GsonBuilder()
+            .setPrettyPrinting()
+            .registerTypeAdapter(ModerationCategory.class, new com.google.gson.TypeAdapter<ModerationCategory>() {
+                @Override
+                public void write(com.google.gson.stream.JsonWriter out, ModerationCategory value) throws java.io.IOException {
+                    if (value == null) {
+                        out.nullValue();
+                    } else {
+                        out.value(value.name());
+                    }
+                }
+
+                @Override
+                public ModerationCategory read(com.google.gson.stream.JsonReader in) throws java.io.IOException {
+                    if (in.peek() == com.google.gson.stream.JsonToken.NULL) {
+                        in.nextNull();
+                        return null;
+                    }
+                    return ModerationCategory.fromString(in.nextString());
+                }
+            })
+            .create();
 
     private static PiggyServerConfig INSTANCE;
 
@@ -30,16 +52,21 @@ public class PiggyServerConfig {
     // --- Moderation Configuration ---
     public boolean moderationEnabled = true;
     public java.util.List<ModerationRule> moderationRules = new java.util.ArrayList<>();
+    
+    // --- Gemini LLM Configuration ---
+    public String geminiApiKey = "YOUR_GEMINI_API_KEY_HERE";
+    public String geminiSystemPrompt = "You are a Minecraft server moderator. Analyze chat messages for toxicity, hate speech, harassment, sexual content, or dangerous content.";
+    public String geminiModel = "gemini-2.5-flash";
 
     public static class ModerationRule {
-        public String category; // e.g., Slurs, Swears, Politics
+        public ModerationCategory category; // Enum category
         public String language; // e.g., en, fr, all
         public String regex;
         public boolean enabled = true;
 
         public ModerationRule() {}
 
-        public ModerationRule(String category, String language, String regex) {
+        public ModerationRule(ModerationCategory category, String language, String regex) {
             this.category = category;
             this.language = language;
             this.regex = regex;
@@ -66,6 +93,7 @@ public class PiggyServerConfig {
         }
 
         INSTANCE.ensureAllFeatures();
+        INSTANCE.moderationRules.removeIf(rule -> rule == null || rule.category == null);
         INSTANCE.ensureDefaultModerationRules();
         save();
     }
@@ -87,8 +115,8 @@ public class PiggyServerConfig {
     private void ensureDefaultModerationRules() {
         if (moderationRules.isEmpty()) {
             System.out.println("[PiggyAdmin] Adding default moderation rules...");
-            moderationRules.add(new ModerationRule("Swears", "all", "(?i)\\b(fuck|shit|asshole)\\b"));
-            moderationRules.add(new ModerationRule("Dox", "all", "\\b\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\b")); // IP regex
+            moderationRules.add(new ModerationRule(ModerationCategory.SWEARS, "all", "(?i)\\b(fuck|shit|asshole)\\b"));
+            moderationRules.add(new ModerationRule(ModerationCategory.DOX, "all", "\\b\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\b")); // IP regex
         }
     }
 
