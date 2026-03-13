@@ -29,13 +29,23 @@ Feel free to fork the project or submit a Pull Request if you want to contribute
 
 ### 🕵️ X-Ray Detection
 *   **Heuristic Detection**: The server monitors mining patterns to detect suspicious behavior.
-*   **Ratio Analysis**: Calculates the ratio of rare ores (Diamond, Ancient Debris) mined versus common blocks (Stone, Netherrack).
+*   **Ratio Analysis**: Calculates the ratio of rare ores mined versus common blocks.
+    *   **Rare Ores**: Diamond, Ancient Debris, Iron, Gold, Emerald.
+    *   **Common Blocks**: Stone, Deepslate, Netherrack, etc.
 *   **Configurable Thresholds**: Adjust sensitivity via `xrayMaxRatio` in config.
 *   **Alerts**: Admins are notified if a player's mining ratio exceeds the configured threshold.
+
+### 📜 Moderation Engine
+*   **AI-Powered Moderation**: Integrates with **Google Gemini AI** to automatically filter toxic or inappropriate chat and sign text.
+*   **Dynamic Rule System**: Define custom moderation rules and categories (e.g., Profanity, Harassment, Hate Speech).
+*   **Performance Optimized**: Includes a high-performance cache and rate-limiting system to minimize API latency and handle free-tier API limits gracefully.
+*   **Hybrid Checking**: Combines fast local **Regex** checks with deep semantic analysis from Gemini.
+*   **Categorized Logs**: All blocked messages are logged with their specific category for easy review.
 
 ### 📜 History & Logging
 *   **Sign History**: Tracks who placed a sign and what was written on it.
 *   **Chat History**: Logs all chat messages for administrative review.
+*   **Explosion Logging**: Detailed logs for TNT placement, ignition, and explosions, including player attribution whenever possible.
 *   **Blame Tool**: Inspect existing signs/blocks to see who interacted with them and when.
 *   **Persistent Storage**: History survives server restarts (saved to `config/piggy-admin-history.json`).
 
@@ -49,10 +59,11 @@ All commands require **OP level 2** or higher.
 *   `/piggy cheats <allow|forbid>`: Globally allow or forbid "cheat" features for all players.
 *   `/piggy feature list`: List all controllable features and their current status.
 *   `/piggy feature <id> <enable|disable>`: Enable or disable a specific feature (e.g., `flexible_placement`, `tool_swap`).
+*   `/piggy sync`: Manually trigger a synchronization of all admin settings and moderation rules to all connected clients.
 
 ### Investigation & Logging
 *   `/blame`: Look at a sign or block and run this command to see who placed/modified it and when.
-*   `/logs <player_name>`: View the recent chat and sign history for a specific player.
+*   `/logs <player_name>`: View the recent chat, sign, tnt, and moderation history for a specific player.
     *   **Clickable Coordinates**: Sign logs include coordinates that you can click to teleport to.
 
 ---
@@ -69,16 +80,24 @@ The mod generates a configuration file at `config/piggy-admin-server.json` (serv
     "fast_place": false,
     "tool_swap": true
   },
+  "xrayCheck": true,
   "xrayMaxRatio": 0.15,
-  "xrayMinBlocks": 20
+  "xrayMinBlocks": 20,
+  "moderationEnabled": true,
+  "geminiApiKey": "YOUR_KEY",
+  "geminiModel": "gemini-1.5-flash"
 }
 ```
 
 *   `"allowCheats": false`: Forces all connected clients to disable restricted features.
 *   `"allowCheats": true`: Allows clients to use their own local settings.
-*   `"features"`: Granular control over individual features (only applies when `allowCheats: true`).
+*   `"features"`: Granular control over individual features.
 *   `"xrayMaxRatio"`: Maximum allowed ratio of rare ores to total blocks (default 15%).
 *   `"xrayMinBlocks"`: Minimum blocks mined before X-Ray detection activates (default 20).
+*   `"xrayCheck"`: Toggle the X-Ray detection system.
+*   `"moderationEnabled"`: Toggle the AI and Regex moderation engine.
+*   `"geminiApiKey"`: Your Google Gemini API Key.
+*   `"geminiModel"`: The Gemini model to use (default: `gemini-1.5-flash`).
 
 ---
 
