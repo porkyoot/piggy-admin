@@ -2,14 +2,9 @@ package is.pig.minecraft.admin.moderation;
 
 import is.pig.minecraft.admin.storage.HistoryManager;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.PlayerChatMessage;
 import net.minecraft.network.chat.ChatType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -17,8 +12,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 public class ModerationEngine {
-    private static final Logger LOGGER = LoggerFactory.getLogger("ModerationEngine");
-    private static final DateTimeFormatter LOG_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final is.pig.minecraft.lib.util.PiggyLog LOGGER = new is.pig.minecraft.lib.util.PiggyLog("piggy-admin", "ModerationEngine");
     private static ModerationEngine INSTANCE;
     private final List<ModerationChecker> checkers = new ArrayList<>();
 
@@ -62,10 +56,9 @@ public class ModerationEngine {
 
         return checkChain.thenApply(result -> {
             if (result.blocked()) {
-                String timestamp = LocalDateTime.now().format(LOG_FORMATTER);
-                player.sendSystemMessage(Component.literal("§cYour message was blocked by moderation."));
+                is.pig.minecraft.lib.util.PiggyMessenger.sendError(player, "piggy.admin.moderation.blocked");
                 
-                LOGGER.info("[{}] Blocked ({}) from {}: {}", timestamp, result.category(), player.getName().getString(), content);
+                LOGGER.info("Blocked ({}) from {}: {}", result.category(), player.getName().getString(), content);
                 
                 // Log to history for /logs command
                 HistoryManager.logBlock(player.getName().getString(), player.getUUID(), content, result.category());
