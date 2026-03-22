@@ -18,13 +18,20 @@ public class PiggyAdminConfigScreenFactory {
         return YetAnotherConfigLib.createBuilder()
                 .title(Component.literal("Piggy Admin Configuration"))
                 .category(ConfigCategory.createBuilder()
-                        .name(Component.literal("Chat Moderation"))
-                        .option(Option.<Boolean>createBuilder()
-                                .name(Component.literal("Enable Moderation"))
-                                .description(OptionDescription.of(Component.literal("Enable asynchronous chat moderation using regex rules.")))
-                                .binding(false, () -> config.moderationEnabled, v -> config.moderationEnabled = v)
-                                .controller(TickBoxControllerBuilder::create)
+                        .name(Component.literal("Server Settings"))
+                        
+                        // Chat Moderation Toggle
+                        .group(OptionGroup.createBuilder()
+                                .name(Component.literal("Chat Moderation"))
+                                .option(Option.<Boolean>createBuilder()
+                                        .name(Component.literal("Enable Moderation"))
+                                        .description(OptionDescription.of(Component.literal("Enable asynchronous chat moderation using regex rules.")))
+                                        .binding(false, () -> config.moderationEnabled, v -> config.moderationEnabled = v)
+                                        .controller(TickBoxControllerBuilder::create)
+                                        .build())
                                 .build())
+                                
+                        // Chat Moderation Rules
                         .group(ListOption.<String>createBuilder()
                                 .name(Component.literal("Moderation Rules"))
                                 .description(OptionDescription.of(Component.literal("Format: Category|Language|Regex (e.g., SWEARS|en|(?i)badword)")))
@@ -47,6 +54,8 @@ public class PiggyAdminConfigScreenFactory {
                                 .controller(StringControllerBuilder::create)
                                 .initial("")
                                 .build())
+                                
+                        // Gemini AI Moderation Group
                         .group(OptionGroup.createBuilder()
                                 .name(Component.literal("Gemini AI Moderation"))
                                 .option(Option.<String>createBuilder()
@@ -67,15 +76,19 @@ public class PiggyAdminConfigScreenFactory {
                                         .controller(StringControllerBuilder::create)
                                         .build())
                                 .build())
-                        .build())
-                .category(ConfigCategory.createBuilder()
-                        .name(Component.literal("Anti-Cheat"))
-                        .option(Option.<Boolean>createBuilder()
-                                .name(Component.literal("Allow Cheats (Global)"))
-                                .description(OptionDescription.of(Component.literal("Master switch for all cheat features on the server.")))
-                                .binding(true, () -> config.allowCheats, v -> config.allowCheats = v)
-                                .controller(TickBoxControllerBuilder::create)
+                                
+                        // Anti-Cheat Group
+                        .group(OptionGroup.createBuilder()
+                                .name(Component.literal("Anti-Cheat"))
+                                .option(Option.<Boolean>createBuilder()
+                                        .name(Component.literal("Allow Cheats (Global)"))
+                                        .description(OptionDescription.of(Component.literal("Master switch for all cheat features on the server.")))
+                                        .binding(true, () -> config.allowCheats, v -> config.allowCheats = v)
+                                        .controller(TickBoxControllerBuilder::create)
+                                        .build())
                                 .build())
+                                
+                        // X-Ray Detector Group
                         .group(OptionGroup.createBuilder()
                                 .name(Component.literal("X-Ray Detector"))
                                 .option(Option.<Boolean>createBuilder()
@@ -96,6 +109,8 @@ public class PiggyAdminConfigScreenFactory {
                                         .controller(opt -> IntegerSliderControllerBuilder.create(opt).range(5, 100).step(1))
                                         .build())
                                 .build())
+                                
+                        // Specific Features Group
                         .group(createFeaturesGroup(config))
                         .build())
 
