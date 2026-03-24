@@ -296,6 +296,9 @@ public class PiggyAdminTests {
         net.minecraft.server.level.ServerLevel level = context.getLevel();
         net.fabricmc.fabric.api.entity.FakePlayer fakePlayer = net.fabricmc.fabric.api.entity.FakePlayer.get(level);
 
+        // Instantiate the rule
+        is.pig.minecraft.admin.anticheat.IAntiCheatRule xrayDetector = new is.pig.minecraft.admin.anticheat.XRayDetector();
+
         // Simulate normal mining: 12 stone blocks
         System.out.println("[TEST] Simulating normal mining: 12 stone blocks");
         for (int i = 0; i < 12; i++) {
@@ -303,10 +306,9 @@ public class PiggyAdminTests {
             context.setBlock(pos, Blocks.STONE);
 
             // Simulate block break
-            is.pig.minecraft.admin.anticheat.XRayDetector.onBlockBreak(
+            xrayDetector.evaluate(
                     fakePlayer,
-                    pos,
-                    Blocks.STONE.defaultBlockState());
+                    new is.pig.minecraft.admin.anticheat.ActionContext(level, pos, Blocks.STONE.defaultBlockState()));
         }
 
         // Now simulate suspicious mining: 10 diamond ores
@@ -317,10 +319,9 @@ public class PiggyAdminTests {
             context.setBlock(pos, Blocks.DIAMOND_ORE);
 
             // Simulate block break - THIS should trigger the alert
-            is.pig.minecraft.admin.anticheat.XRayDetector.onBlockBreak(
+            xrayDetector.evaluate(
                     fakePlayer,
-                    pos,
-                    Blocks.DIAMOND_ORE.defaultBlockState());
+                    new is.pig.minecraft.admin.anticheat.ActionContext(level, pos, Blocks.DIAMOND_ORE.defaultBlockState()));
         }
 
         // The XRayDetector will log to console via AdminNotifier

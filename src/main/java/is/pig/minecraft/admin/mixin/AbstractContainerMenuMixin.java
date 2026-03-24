@@ -50,7 +50,8 @@ public abstract class AbstractContainerMenuMixin {
             String action = serverPlayer.getName().getString() + " interacted with " + targetStack.getItem().getName(targetStack).getString() + " in Dispenser";
 
             COOLDOWNS.put(serverPlayer.getUUID(), now);
-            HistoryManager.logTnt(serverPlayer.getName().getString(), serverPlayer.getUUID(), action, worldId, pos);
+            is.pig.minecraft.admin.storage.BlameData blame = new is.pig.minecraft.admin.storage.BlameData(serverPlayer.getUUID(), serverPlayer.getName().getString(), action, worldId, pos);
+            HistoryManager.logTnt(blame);
             AdminNotifier.notifyAdmins(serverPlayer, "TNT", pos, Component.literal(action));
         }
     }

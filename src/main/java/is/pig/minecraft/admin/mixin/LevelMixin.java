@@ -51,7 +51,8 @@ public abstract class LevelMixin {
 
         if (playerCause != null) {
             String fullAction = playerCause.getName().getString() + " caused Explosion - Source: " + cause;
-            HistoryManager.logTnt(playerCause.getName().getString(), playerCause.getUUID(), fullAction, worldId, pos);
+            is.pig.minecraft.admin.storage.BlameData blame = new is.pig.minecraft.admin.storage.BlameData(playerCause.getUUID(), playerCause.getName().getString(), fullAction, worldId, pos);
+            HistoryManager.logTnt(blame);
             AdminNotifier.notifyAdmins(playerCause, "EXPLOSION", pos, Component.literal(fullAction));
         } else {
             HistoryManager.logExplosion(cause, details, worldId, pos);

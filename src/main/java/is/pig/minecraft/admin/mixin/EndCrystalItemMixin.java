@@ -23,7 +23,8 @@ public class EndCrystalItemMixin {
             String worldId = player.serverLevel().dimension().location().toString();
             String action = player.getName().getString() + " placed End Crystal";
 
-            HistoryManager.logTnt(player.getName().getString(), player.getUUID(), action, worldId, pos);
+            is.pig.minecraft.admin.storage.BlameData blame = new is.pig.minecraft.admin.storage.BlameData(player.getUUID(), player.getName().getString(), action, worldId, pos);
+            HistoryManager.logTnt(blame);
             AdminNotifier.notifyAdmins(player, "END_CRYSTAL", pos, Component.literal(action));
         }
     }

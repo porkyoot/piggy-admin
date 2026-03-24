@@ -8,11 +8,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.*;
 
-public class XRayDetector {
+public class XRayDetector implements IAntiCheatRule {
 
     // A simple record to store what was mined and when
     private static class MineEvent {
@@ -33,20 +32,22 @@ public class XRayDetector {
     // Window size in milliseconds (5 minutes)
     private static final long TIME_WINDOW_MS = 5 * 60 * 1000;
 
-    public static void onBlockBreak(ServerPlayer player, BlockPos pos, BlockState state) {
+    @Override
+    public boolean evaluate(ServerPlayer player, ActionContext context) {
         PiggyServerConfig config = PiggyServerConfig.getInstance();
-        if (!config.xrayCheck) return;
+        if (!config.xrayCheck) return false;
 
+        BlockPos pos = context.pos();
         // Ignore blocks mined above y=64
-        if (pos.getY() > 64) return;
+        if (pos.getY() > 64) return false;
 
-        Block block = state.getBlock();
+        Block block = context.state().getBlock();
         boolean isRare = isRareOre(block);
         boolean isCommon = isCommonBlock(block);
 
         // Optimization: Don't track blocks that are neither rare nor common (like dirt/wood)
         // unless we want strictly "Total Blocks". The prompt specified "vs Stone/Netherrack".
-        if (!isRare && !isCommon) return;
+        if (!isRare && !isCommon) return false;
 
         UUID uuid = player.getUUID();
         playerHistory.putIfAbsent(uuid, new ArrayDeque<>());
@@ -57,29 +58,28 @@ public class XRayDetector {
         // 1. Add new event
         history.addLast(new MineEvent(now, isRare, isCommon));
 
-        // 2. Remove old events (older than 2 mins)
-        while (!history.isEmpty() && (now - history.peekFirst().timestamp > TIME_WINDOW_MS)) {
-            history.removeFirst();
-        }
+        // 2. Remove old events (older than 2 mins) using Streams API
+        java.util.List<MineEvent> validEvents = history.stream()
+                .filter(e -> (now - e.timestamp) <= TIME_WINDOW_MS)
+                .toList();
+        
+        history.clear();
+        history.addAll(validEvents);
 
         // 3. Check Ratio
         // We only check if the buffer has enough data to be statistically relevant
         if (history.size() >= config.xrayMinBlocks) {
-            checkRatio(player, history, pos, config);
+            return checkRatio(player, history, pos, config);
         }
+        return false;
     }
 
-    private static void checkRatio(ServerPlayer player, Deque<MineEvent> history, BlockPos pos, PiggyServerConfig config) {
-        int rareCount = 0;
-        int commonCount = 0;
+    private boolean checkRatio(ServerPlayer player, Deque<MineEvent> history, BlockPos pos, PiggyServerConfig config) {
+        long rareCount = history.stream().filter(e -> e.isRare).count();
+        long commonCount = history.stream().filter(e -> e.isCommon).count();
 
-        for (MineEvent event : history) {
-            if (event.isRare) rareCount++;
-            if (event.isCommon) commonCount++;
-        }
-
-        int totalTracked = rareCount + commonCount;
-        if (totalTracked == 0) return;
+        long totalTracked = rareCount + commonCount;
+        if (totalTracked == 0) return false;
 
         // Ratio: Rare / (Rare + Common)
         float ratio = (float) rareCount / (float) totalTracked;
@@ -107,7 +107,9 @@ public class XRayDetector {
                 int toRemove = history.size() / 2;
                 for(int i=0; i<toRemove; i++) history.removeFirst();
             }
+            return true;
         }
+        return false;
     }
 
     private static boolean isRareOre(Block block) {

@@ -25,15 +25,15 @@ public class HistoryManager {
 
     private static List<HistoryEntry> history = new ArrayList<>();
 
-    public static void logTnt(String playerName, UUID uuid, String action, String worldId, BlockPos pos) {
+    public static void logTnt(BlameData blame) {
         HistoryEntry entry = new HistoryEntry(
                 LocalDateTime.now().format(TIME_FORMATTER),
-                playerName,
-                uuid,
+                blame.authorName(),
+                blame.authorUuid(),
                 HistoryEntry.Type.TNT,
-                action
+                blame.action()
         );
-        entry.setLocation(worldId, pos.getX(), pos.getY(), pos.getZ());
+        entry.setLocation(blame.worldId(), blame.pos().getX(), blame.pos().getY(), blame.pos().getZ());
         history.add(entry);
         save();
     }

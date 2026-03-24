@@ -127,9 +127,10 @@ public class PiggyAdmin implements ModInitializer {
         });
 
         // --- REGISTER XRAY DETECTOR ---
+        is.pig.minecraft.admin.anticheat.IAntiCheatRule xrayDetector = new XRayDetector();
         PlayerBlockBreakEvents.AFTER.register((world, player, pos, state, blockEntity) -> {
             if (!world.isClientSide()) {
-                XRayDetector.onBlockBreak((net.minecraft.server.level.ServerPlayer) player, pos, state);
+                xrayDetector.evaluate((net.minecraft.server.level.ServerPlayer) player, new is.pig.minecraft.admin.anticheat.ActionContext(world, pos, state));
             }
         });
     }
