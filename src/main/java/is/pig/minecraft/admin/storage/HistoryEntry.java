@@ -1,6 +1,8 @@
 package is.pig.minecraft.admin.storage;
 
 import is.pig.minecraft.admin.moderation.ModerationCategory;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 public class HistoryEntry {
@@ -15,7 +17,10 @@ public class HistoryEntry {
     public String content;
     public ModerationCategory category; // Category for BLOCK result
     
-    // Location data (only relevant for SIGN type)
+    // Metadata for rich context (e.g., nearby players, victims, radius)
+    public Map<String, String> metadata = new HashMap<>();
+
+    // Location data
     public String worldId;
     public int x;
     public int y;
@@ -31,6 +36,16 @@ public class HistoryEntry {
 
     public HistoryEntry setCategory(ModerationCategory category) {
         this.category = category;
+        return this;
+    }
+
+    public Map<String, String> getMetadata() {
+        if (metadata == null) metadata = new HashMap<>();
+        return metadata;
+    }
+
+    public HistoryEntry putMetadata(String key, String value) {
+        getMetadata().put(key, value);
         return this;
     }
 

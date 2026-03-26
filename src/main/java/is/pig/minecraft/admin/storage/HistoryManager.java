@@ -25,7 +25,7 @@ public class HistoryManager {
 
     private static List<HistoryEntry> history = new ArrayList<>();
 
-    public static void logTnt(BlameData blame) {
+    public static HistoryEntry logTnt(BlameData blame) {
         HistoryEntry entry = new HistoryEntry(
                 LocalDateTime.now().format(TIME_FORMATTER),
                 blame.authorName(),
@@ -36,19 +36,48 @@ public class HistoryManager {
         entry.setLocation(blame.worldId(), blame.pos().getX(), blame.pos().getY(), blame.pos().getZ());
         history.add(entry);
         save();
+        return entry;
     }
 
-    public static void logExplosion(String source, String details, String worldId, BlockPos pos) {
+    public static HistoryEntry logExplosion(String source, String details, String worldId, BlockPos pos) {
         HistoryEntry entry = new HistoryEntry(
                 LocalDateTime.now().format(TIME_FORMATTER),
                 source,
-                null, // Source might not be a player
+                null,
                 HistoryEntry.Type.EXPLOSION,
                 details
         );
         entry.setLocation(worldId, pos.getX(), pos.getY(), pos.getZ());
         history.add(entry);
         save();
+        return entry;
+    }
+
+    public static List<HistoryEntry> findExplosionsAffecting(String worldId, BlockPos pos) {
+        List<HistoryEntry> results = new ArrayList<>();
+        List<HistoryEntry> reversed = new ArrayList<>(history);
+        Collections.reverse(reversed);
+
+        for (HistoryEntry entry : reversed) {
+            if ((entry.type == HistoryEntry.Type.EXPLOSION || entry.type == HistoryEntry.Type.TNT) &&
+                entry.worldId != null && entry.worldId.equals(worldId)) {
+                
+                String radiusStr = entry.getMetadata().get("radius");
+                float radius = radiusStr != null ? Float.parseFloat(radiusStr) : 4.0f; // Default TNT radius
+                
+                double dx = entry.x - pos.getX();
+                double dy = entry.y - pos.getY();
+                double dz = entry.z - pos.getZ();
+                double distSq = dx*dx + dy*dy + dz*dz;
+                
+                if (distSq <= (radius + 1.5) * (radius + 1.5)) {
+                    results.add(entry);
+                }
+            }
+            // Limit to recent explosions for performance
+            if (results.size() >= 5) break;
+        }
+        return results;
     }
 
     public static void load() {

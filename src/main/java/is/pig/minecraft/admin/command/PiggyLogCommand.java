@@ -19,6 +19,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 
 import java.util.List;
+import java.util.Map;
 
 public class PiggyLogCommand {
 
@@ -51,27 +52,60 @@ public class PiggyLogCommand {
         }
 
         HitResult hit = entity.pick(5.0D, 0.0F, false);
-        if (hit.getType() != HitResult.Type.BLOCK) {
-            context.getSource().sendFailure(Component.literal("Look at a block."));
-            return 0;
+        BlockPos pos;
+        if (hit.getType() == HitResult.Type.BLOCK) {
+            pos = ((BlockHitResult) hit).getBlockPos();
+        } else {
+            // If not looking at a block, check the position the player is standing in or near
+            pos = entity.blockPosition();
         }
-
-        BlockPos pos = ((BlockHitResult) hit).getBlockPos();
+        
         String worldId = entity.level().dimension().location().toString();
 
+        // 1. Check for direct block history
         HistoryEntry entry = HistoryManager.getBlockInfo(worldId, pos, HistoryEntry.Type.SIGN, HistoryEntry.Type.TNT);
 
-        if (entry == null) {
-            context.getSource().sendFailure(Component.literal("No history for this block."));
-        } else {
-            String typeLabel = (entry.type == HistoryEntry.Type.SIGN) ? "Sign" : "TNT/Rail";
-            context.getSource().sendSuccess(() -> Component.literal("")
-                    .append(Component.literal(typeLabel + " Blame: ").withStyle(ChatFormatting.GOLD))
-                    .append(Component.literal(entry.playerName).withStyle(ChatFormatting.RED))
-                    .append(Component.literal(" @ " + entry.timestamp).withStyle(ChatFormatting.GRAY))
-                    .append(Component.literal(" -> " + entry.content).withStyle(ChatFormatting.WHITE)), false);
+        if (entry != null) {
+            formatAndSendEntry(context, entry, "Blame");
+            return 1;
         }
+
+        // 2. Check for explosions that might have destroyed this block
+        List<HistoryEntry> explosions = HistoryManager.findExplosionsAffecting(worldId, pos);
+        if (!explosions.isEmpty()) {
+            context.getSource().sendSuccess(() -> Component.literal("Explosions affecting this area:").withStyle(ChatFormatting.GOLD), false);
+            for (HistoryEntry ex : explosions) {
+                formatAndSendEntry(context, ex, "Explosion");
+            }
+        } else {
+            context.getSource().sendFailure(Component.literal("No history for this location."));
+        }
+        
         return 1;
+    }
+
+    private static void formatAndSendEntry(CommandContext<CommandSourceStack> context, HistoryEntry entry, String label) {
+        String typeLabel = (entry.type == HistoryEntry.Type.SIGN) ? "Sign" : 
+                          (entry.type == HistoryEntry.Type.TNT) ? "TNT/Responsibility" : "Explosion";
+        
+        MutableComponent component = Component.literal("")
+                .append(Component.literal(label + " (" + typeLabel + "): ").withStyle(ChatFormatting.GOLD))
+                .append(Component.literal(entry.playerName != null ? entry.playerName : "Unknown").withStyle(ChatFormatting.RED))
+                .append(Component.literal(" @ " + entry.timestamp).withStyle(ChatFormatting.GRAY))
+                .append(Component.literal(" -> " + (entry.content != null ? entry.content : "")).withStyle(ChatFormatting.WHITE));
+
+        // Add metadata if available
+        Map<String, String> meta = entry.getMetadata();
+        if (meta.containsKey("nearby_players")) {
+            component.append(Component.literal("\n  Nearby: ").withStyle(ChatFormatting.AQUA))
+                     .append(Component.literal(meta.get("nearby_players")).withStyle(ChatFormatting.GRAY));
+        }
+        if (meta.containsKey("victims")) {
+            component.append(Component.literal("\n  Victims: ").withStyle(ChatFormatting.DARK_RED))
+                     .append(Component.literal(meta.get("victims")).withStyle(ChatFormatting.WHITE));
+        }
+
+        context.getSource().sendSuccess(() -> component, false);
     }
 
     private static int showLogs(CommandContext<CommandSourceStack> context) {
@@ -85,7 +119,7 @@ public class PiggyLogCommand {
 
         context.getSource().sendSuccess(() -> Component.literal("=== Logs for " + targetName + " ===").withStyle(ChatFormatting.DARK_AQUA), false);
 
-        int start = Math.max(0, entries.size() - 10);
+        int start = Math.max(0, entries.size() - 20); // Show more logs
         for (int i = start; i < entries.size(); i++) {
             HistoryEntry e = entries.get(i);
             String actionTag = e.type.name();
@@ -96,9 +130,9 @@ public class PiggyLogCommand {
 
             MutableComponent tagComponent = Component.literal("[" + actionTag + "]").withStyle(ChatFormatting.YELLOW);
             
-            if ((e.type == HistoryEntry.Type.SIGN || e.type == HistoryEntry.Type.TNT) && e.worldId != null) {
-                String tpCmd = String.format("/tp %s %d %d %d", targetName, e.x, e.y, e.z);
-                String hoverText = String.format("%s: %d, %d, %d", e.worldId, e.x, e.y, e.z);
+            if ((e.type == HistoryEntry.Type.SIGN || e.type == HistoryEntry.Type.TNT || e.type == HistoryEntry.Type.EXPLOSION) && e.worldId != null) {
+                String tpCmd = String.format("/execute in %s run tp @s %d %d %d", e.worldId, e.x, e.y, e.z);
+                String hoverText = String.format("%s: %d, %d, %d\nClick to TP", e.worldId, e.x, e.y, e.z);
                 
                 tagComponent = tagComponent.withStyle(style -> style
                         .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, tpCmd))
@@ -107,7 +141,13 @@ public class PiggyLogCommand {
             }
 
             logLine = logLine.append(tagComponent)
-                             .append(Component.literal(" " + e.content).withStyle(ChatFormatting.WHITE));
+                             .append(Component.literal(" " + (e.content != null ? e.content : "")).withStyle(ChatFormatting.WHITE));
+
+            // Add rich metadata summary to log line
+            Map<String, String> meta = e.getMetadata();
+            if (meta.containsKey("victims")) {
+                logLine.append(Component.literal(" [Victims: " + meta.get("victims") + "]").withStyle(ChatFormatting.RED));
+            }
 
             final Component finalLogLine = logLine;
             context.getSource().sendSuccess(() -> finalLogLine, false);

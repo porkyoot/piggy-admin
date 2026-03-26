@@ -7,8 +7,9 @@
 		"BlockItemMixin",
 		"MinecartItemMixin",
 		"AbstractContainerMenuMixin",
-		"LevelMixin",
-		"EndCrystalItemMixin"
+		"ExplosionMixin",
+		"EndCrystalItemMixin",
+		"CreeperMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
