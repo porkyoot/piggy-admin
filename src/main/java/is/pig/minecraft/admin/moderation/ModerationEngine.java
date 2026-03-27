@@ -2,6 +2,7 @@ package is.pig.minecraft.admin.moderation;
 
 import is.pig.minecraft.admin.storage.HistoryManager;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.PlayerChatMessage;
 import net.minecraft.network.chat.ChatType;
 
@@ -61,7 +62,7 @@ public class ModerationEngine {
                 LOGGER.info("Blocked ({}) from {}: {}", result.category(), player.getName().getString(), content);
                 
                 // Log to history for /logs command
-                HistoryManager.logBlock(player.getName().getString(), player.getUUID(), content, result.category());
+                HistoryManager.logBlock(player, content, result.category(), player.serverLevel().dimension().location().toString(), player.blockPosition());
                 
                 return false;
             }
@@ -79,6 +80,33 @@ public class ModerationEngine {
                 }
             });
             
+            return true;
+        });
+    }
+
+    public CompletableFuture<Boolean> processSign(ServerPlayer player, String[] lines, BlockPos pos) {
+        String content = String.join(" | ", lines);
+        if (content.replace("|", "").trim().isEmpty()) return CompletableFuture.completedFuture(true);
+
+        CompletableFuture<ModerationResult> checkChain = ModerationResult.safeFuture();
+        for (ModerationChecker checker : checkers) {
+            checkChain = checkChain.thenCompose(result -> {
+                if (result.blocked()) return CompletableFuture.completedFuture(result);
+                return checker.check(player, content);
+            });
+        }
+
+        return checkChain.thenApply(result -> {
+            if (result.blocked()) {
+                is.pig.minecraft.lib.util.PiggyMessenger.sendError(player, "piggy.admin.moderation.blocked");
+                LOGGER.info("Blocked Sign ({}) from {}: {}", result.category(), player.getName().getString(), content);
+                
+                HistoryManager.logBlock(player, content, result.category(), player.serverLevel().dimension().location().toString(), pos);
+                return false;
+            }
+            
+            // Log allowed sign to history
+            HistoryManager.logSign(player, content, player.serverLevel().dimension().location().toString(), pos);
             return true;
         });
     }

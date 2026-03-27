@@ -1,9 +1,7 @@
 package is.pig.minecraft.admin.mixin;
 
 import is.pig.minecraft.admin.storage.HistoryManager;
-import is.pig.minecraft.admin.util.AdminNotifier;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ClickType;
@@ -47,16 +45,25 @@ public abstract class AbstractContainerMenuMixin {
         if (targetStack != null && isDangerous(targetStack)) {
             BlockPos pos = serverPlayer.blockPosition(); // Fallback
             String worldId = serverPlayer.serverLevel().dimension().location().toString();
-            String action = serverPlayer.getName().getString() + " interacted with " + targetStack.getItem().getName(targetStack).getString() + " in Dispenser";
+            String itemName = targetStack.getItem().getName(targetStack).getString();
+            String action = serverPlayer.getName().getString() + " interacted with " + itemName + " in Dispenser";
 
             COOLDOWNS.put(serverPlayer.getUUID(), now);
             is.pig.minecraft.admin.storage.BlameData blame = new is.pig.minecraft.admin.storage.BlameData(serverPlayer.getUUID(), serverPlayer.getName().getString(), action, worldId, pos);
-            HistoryManager.logTnt(blame);
-            AdminNotifier.notifyAdmins(serverPlayer, "TNT", pos, Component.literal(action));
+
+            if (targetStack.is(Items.TNT) || targetStack.is(Items.TNT_MINECART)) {
+                HistoryManager.logTnt(serverPlayer, blame);
+            } else if (targetStack.is(Items.LAVA_BUCKET)) {
+                HistoryManager.logLava(serverPlayer, blame);
+            } else if (targetStack.is(Items.FIRE_CHARGE) || targetStack.is(Items.FLINT_AND_STEEL)) {
+                HistoryManager.logFire(serverPlayer, blame);
+            }
         }
     }
 
     private boolean isDangerous(ItemStack stack) {
-        return stack.is(Items.TNT) || stack.is(Items.TNT_MINECART);
+        return stack.is(Items.TNT) || stack.is(Items.TNT_MINECART) || 
+               stack.is(Items.LAVA_BUCKET) || stack.is(Items.FIRE_CHARGE) || 
+               stack.is(Items.FLINT_AND_STEEL);
     }
 }

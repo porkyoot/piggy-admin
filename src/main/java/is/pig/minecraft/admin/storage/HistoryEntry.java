@@ -7,7 +7,7 @@ import java.util.UUID;
 
 public class HistoryEntry {
     public enum Type {
-        CHAT, SIGN, TNT, EXPLOSION, BLOCK
+        CHAT, SIGN, TNT, EXPLOSION, BLOCK, FIRE, BURN, LAVA
     }
 
     public String timestamp;

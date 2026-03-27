@@ -62,15 +62,20 @@ public class PiggyLogCommand {
         
         String worldId = entity.level().dimension().location().toString();
 
-        // 1. Check for direct block history
-        HistoryEntry entry = HistoryManager.getBlockInfo(worldId, pos, HistoryEntry.Type.SIGN, HistoryEntry.Type.TNT);
+        // 1. Check for nearby historical incidents (10 block radius)
+        List<HistoryEntry> entries = HistoryManager.findEntriesNear(worldId, pos, 10.0, 
+                HistoryEntry.Type.SIGN, HistoryEntry.Type.TNT, HistoryEntry.Type.FIRE, 
+                HistoryEntry.Type.BURN, HistoryEntry.Type.BLOCK, HistoryEntry.Type.LAVA);
 
-        if (entry != null) {
-            formatAndSendEntry(context, entry, "Blame");
+        if (!entries.isEmpty()) {
+            context.getSource().sendSuccess(() -> Component.literal("Historical incidents within 10 blocks:").withStyle(ChatFormatting.GOLD), false);
+            for (HistoryEntry e : entries) {
+                formatAndSendEntry(context, e, "Incident");
+            }
             return 1;
         }
 
-        // 2. Check for explosions that might have destroyed this block
+        // 2. Check for explosions that might have destroyed this block (fallback for older/distant explosions)
         List<HistoryEntry> explosions = HistoryManager.findExplosionsAffecting(worldId, pos);
         if (!explosions.isEmpty()) {
             context.getSource().sendSuccess(() -> Component.literal("Explosions affecting this area:").withStyle(ChatFormatting.GOLD), false);
@@ -78,7 +83,7 @@ public class PiggyLogCommand {
                 formatAndSendEntry(context, ex, "Explosion");
             }
         } else {
-            context.getSource().sendFailure(Component.literal("No history for this location."));
+            context.getSource().sendFailure(Component.literal("No history found within 10 blocks."));
         }
         
         return 1;
@@ -86,7 +91,10 @@ public class PiggyLogCommand {
 
     private static void formatAndSendEntry(CommandContext<CommandSourceStack> context, HistoryEntry entry, String label) {
         String typeLabel = (entry.type == HistoryEntry.Type.SIGN) ? "Sign" : 
-                          (entry.type == HistoryEntry.Type.TNT) ? "TNT/Responsibility" : "Explosion";
+                          (entry.type == HistoryEntry.Type.TNT) ? "TNT/Responsibility" : 
+                          (entry.type == HistoryEntry.Type.FIRE) ? "Ignition" :
+                          (entry.type == HistoryEntry.Type.LAVA) ? "Lava" :
+                          (entry.type == HistoryEntry.Type.BURN) ? "Fire Damage" : "Explosion";
         
         MutableComponent component = Component.literal("")
                 .append(Component.literal(label + " (" + typeLabel + "): ").withStyle(ChatFormatting.GOLD))
@@ -130,7 +138,9 @@ public class PiggyLogCommand {
 
             MutableComponent tagComponent = Component.literal("[" + actionTag + "]").withStyle(ChatFormatting.YELLOW);
             
-            if ((e.type == HistoryEntry.Type.SIGN || e.type == HistoryEntry.Type.TNT || e.type == HistoryEntry.Type.EXPLOSION) && e.worldId != null) {
+            if ((e.type == HistoryEntry.Type.SIGN || e.type == HistoryEntry.Type.TNT || 
+                 e.type == HistoryEntry.Type.EXPLOSION || e.type == HistoryEntry.Type.FIRE || 
+                 e.type == HistoryEntry.Type.BURN || e.type == HistoryEntry.Type.LAVA) && e.worldId != null) {
                 String tpCmd = String.format("/execute in %s run tp @s %d %d %d", e.worldId, e.x, e.y, e.z);
                 String hoverText = String.format("%s: %d, %d, %d\nClick to TP", e.worldId, e.x, e.y, e.z);
                 

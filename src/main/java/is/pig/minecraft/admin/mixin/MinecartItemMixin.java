@@ -29,7 +29,7 @@ public class MinecartItemMixin {
                 String action = player.getName().getString() + " placed TNT Minecart";
 
                 is.pig.minecraft.admin.storage.BlameData blame = new is.pig.minecraft.admin.storage.BlameData(player.getUUID(), player.getName().getString(), action, worldId, pos);
-                HistoryManager.logTnt(blame);
+                HistoryManager.logTnt((net.minecraft.server.level.ServerPlayer) context.getPlayer(), blame);
                 AdminNotifier.notifyAdmins(player, "TNT", pos, Component.literal(action));
             }
         }

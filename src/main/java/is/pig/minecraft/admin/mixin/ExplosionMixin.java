@@ -108,7 +108,7 @@ public abstract class ExplosionMixin {
         if (playerCause != null) {
             String fullAction = playerCause.getName().getString() + " caused Explosion - Source: " + causeName;
             is.pig.minecraft.admin.storage.BlameData blame = new is.pig.minecraft.admin.storage.BlameData(playerCause.getUUID(), playerCause.getName().getString(), fullAction, worldId, pos);
-            entry = HistoryManager.logTnt(blame);
+            entry = HistoryManager.logTnt(playerCause, blame);
             AdminNotifier.notifyAdmins(playerCause, "EXPLOSION", pos, Component.literal(fullAction));
         } else {
             entry = HistoryManager.logExplosion(causeName, details, worldId, pos);

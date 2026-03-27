@@ -9,7 +9,9 @@
 		"AbstractContainerMenuMixin",
 		"ExplosionMixin",
 		"EndCrystalItemMixin",
-		"CreeperMixin"
+		"CreeperMixin",
+		"FlintAndSteelItemMixin",
+		"FireBlockMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

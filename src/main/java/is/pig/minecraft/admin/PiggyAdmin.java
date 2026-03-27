@@ -122,7 +122,7 @@ public class PiggyAdmin implements ModInitializer {
 
         ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
             if (sender != null) {
-                HistoryManager.logChat(sender.getName().getString(), sender.getUUID(), message.signedContent());
+                HistoryManager.logChat(sender, message.signedContent());
             }
         });
 
