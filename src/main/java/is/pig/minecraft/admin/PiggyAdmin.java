@@ -127,10 +127,16 @@ public class PiggyAdmin implements ModInitializer {
         });
 
         // --- REGISTER XRAY DETECTOR ---
+        is.pig.minecraft.admin.anticheat.OreCacheManager.INSTANCE.registerEvents();
         is.pig.minecraft.admin.anticheat.IAntiCheatRule xrayDetector = new XRayDetector();
+        is.pig.minecraft.admin.anticheat.IAntiCheatRule hybridDetector = new is.pig.minecraft.admin.anticheat.HybridXRayDetector();
         PlayerBlockBreakEvents.AFTER.register((world, player, pos, state, blockEntity) -> {
             if (!world.isClientSide()) {
-                xrayDetector.evaluate((net.minecraft.server.level.ServerPlayer) player, new is.pig.minecraft.admin.anticheat.ActionContext(world, pos, state));
+                is.pig.minecraft.admin.anticheat.ActionContext actionContext = new is.pig.minecraft.admin.anticheat.ActionContext(world, pos, state);
+                xrayDetector.evaluate((net.minecraft.server.level.ServerPlayer) player, actionContext);
+                if (is.pig.minecraft.admin.config.PiggyServerConfig.getInstance().xrayHybridCheck) {
+                    hybridDetector.evaluate((net.minecraft.server.level.ServerPlayer) player, actionContext);
+                }
             }
         });
     }

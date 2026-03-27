@@ -8,8 +8,11 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.List;
 import java.util.ArrayList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RegexModerationChecker implements ModerationChecker {
+    private static final Logger LOGGER = LoggerFactory.getLogger("RegexModeration");
     private List<CompiledRule> compiledRules = new ArrayList<>();
 
     public RegexModerationChecker() {
@@ -36,7 +39,7 @@ public class RegexModerationChecker implements ModerationChecker {
         return CompletableFuture.supplyAsync(() -> {
             for (CompiledRule rule : compiledRules) {
                 if (rule.pattern.matcher(message).find()) {
-                    System.out.println("[RegexModeration] Match found for category " + rule.category + ": " + message);
+                    LOGGER.debug("Regex match found for category {}: {}", rule.category, message);
                     return ModerationResult.blocked(rule.category, "Regex match: " + rule.category);
                 }
             }

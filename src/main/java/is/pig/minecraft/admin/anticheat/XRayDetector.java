@@ -11,6 +11,10 @@ import net.minecraft.world.level.block.Blocks;
 
 import java.util.*;
 
+/**
+ * Anticheat rule that detects X-Ray usage by analyzing the ratio of rare ores
+ * mined compared to common blocks (Stone/Deepslate/Netherrack) over a sliding time window.
+ */
 public class XRayDetector implements IAntiCheatRule {
 
     // A simple record to store what was mined and when
@@ -45,8 +49,7 @@ public class XRayDetector implements IAntiCheatRule {
         boolean isRare = isRareOre(block);
         boolean isCommon = isCommonBlock(block);
 
-        // Optimization: Don't track blocks that are neither rare nor common (like dirt/wood)
-        // unless we want strictly "Total Blocks". The prompt specified "vs Stone/Netherrack".
+        // Only track ores vs common filler blocks as defined in sub-methods
         if (!isRare && !isCommon) return false;
 
         UUID uuid = player.getUUID();
@@ -54,20 +57,12 @@ public class XRayDetector implements IAntiCheatRule {
         Deque<MineEvent> history = playerHistory.get(uuid);
 
         long now = System.currentTimeMillis();
-        
-        // 1. Add new event
         history.addLast(new MineEvent(now, isRare, isCommon));
-
-        // 2. Remove old events (older than 2 mins) using Streams API
-        java.util.List<MineEvent> validEvents = history.stream()
-                .filter(e -> (now - e.timestamp) <= TIME_WINDOW_MS)
-                .toList();
         
-        history.clear();
-        history.addAll(validEvents);
+        // Remove events older than the time window
+        history.removeIf(e -> (now - e.timestamp) > TIME_WINDOW_MS);
 
-        // 3. Check Ratio
-        // We only check if the buffer has enough data to be statistically relevant
+        // Check ratio once enough data points are collected
         if (history.size() >= config.xrayMinBlocks) {
             return checkRatio(player, history, pos, config);
         }
@@ -85,13 +80,8 @@ public class XRayDetector implements IAntiCheatRule {
         float ratio = (float) rareCount / (float) totalTracked;
 
         if (ratio > config.xrayMaxRatio) {
-            // cooldown check could go here to prevent spam, 
-            // but AdminNotifier is distinct enough.
-            
-            // Format percentage
             String percentage = String.format("%.1f%%", ratio * 100);
             
-            // Alert Message: "Ratio: 45.0% (8 Rare / 12 Common)"
             Component content = Component.literal("Ratio: ")
                     .append(Component.literal(percentage).withStyle(ChatFormatting.RED, ChatFormatting.BOLD))
                     .append(Component.literal(String.format(" (%d Rare / %d Common)", rareCount, commonCount))
@@ -99,11 +89,8 @@ public class XRayDetector implements IAntiCheatRule {
 
             AdminNotifier.notifyAdmins(player, "XRAY", pos, content);
             
-            // Clear history partially to prevent spamming the same alert every block break?
-            // Or just let it spam (as they are still xraying). 
-            // Clearing 50% of history is a simple "cooldown".
+            // Apply a simple cooldown by clearing half the history after an alert is triggered
             if (history.size() > 10) { 
-                // remove oldest half
                 int toRemove = history.size() / 2;
                 for(int i=0; i<toRemove; i++) history.removeFirst();
             }

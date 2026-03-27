@@ -108,6 +108,18 @@ public class PiggyAdminConfigScreenFactory {
                                         .binding(20, () -> config.xrayMinBlocks, v -> config.xrayMinBlocks = v)
                                         .controller(opt -> IntegerSliderControllerBuilder.create(opt).range(5, 100).step(1))
                                         .build())
+                                .option(Option.<Boolean>createBuilder()
+                                        .name(Component.literal("Hybrid Check Enabled"))
+                                        .description(OptionDescription.of(Component.literal("Enable the heuristic gradient X-Ray detector.")))
+                                        .binding(true, () -> config.xrayHybridCheck, v -> config.xrayHybridCheck = v)
+                                        .controller(TickBoxControllerBuilder::create)
+                                        .build())
+                                .option(Option.<Double>createBuilder()
+                                        .name(Component.literal("Hybrid Threshold"))
+                                        .description(OptionDescription.of(Component.literal("Threshold for the hybrid gradient detector to flag an alert.")))
+                                        .binding(0.05, () -> config.xrayHybridThreshold, v -> config.xrayHybridThreshold = v)
+                                        .controller(opt -> dev.isxander.yacl3.api.controller.DoubleSliderControllerBuilder.create(opt).range(0.01, 0.5).step(0.01))
+                                        .build())
                                 .build())
                                 
                         // Specific Features Group

@@ -11,8 +11,11 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PiggyServerConfig {
+    private static final Logger LOGGER = LoggerFactory.getLogger("PiggyAdmin-Config");
     private static final File CONFIG_FILE = FabricLoader.getInstance().getConfigDir().resolve("piggy-admin-server.json")
             .toFile();
     private static final Gson GSON = new GsonBuilder()
@@ -46,6 +49,9 @@ public class PiggyServerConfig {
     public boolean xrayCheck = true;
     public float xrayMaxRatio = 0.15f; // 15% Rare vs (Rare+Common)
     public int xrayMinBlocks = 20;     // Minimum blocks in window before checking
+    
+    public boolean xrayHybridCheck = true;
+    public double xrayHybridThreshold = 0.05;
     
     public java.util.Map<String, Boolean> features = new java.util.HashMap<>();
 
@@ -114,7 +120,7 @@ public class PiggyServerConfig {
 
     private void ensureDefaultModerationRules() {
         if (moderationRules.isEmpty()) {
-            System.out.println("[PiggyAdmin] Adding default moderation rules...");
+            LOGGER.info("Adding default moderation rules...");
             moderationRules.add(new ModerationRule(ModerationCategory.SWEARS, "all", "(?i)\\b(fuck|shit|asshole)\\b"));
             moderationRules.add(new ModerationRule(ModerationCategory.DOX, "all", "\\b\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\b")); // IP regex
         }

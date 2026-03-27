@@ -11,7 +11,14 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
+import is.pig.minecraft.admin.anticheat.ActionContext;
+import is.pig.minecraft.admin.anticheat.HybridXRayDetector;
+import is.pig.minecraft.admin.anticheat.OreCacheManager;
+import net.fabricmc.fabric.api.entity.FakePlayer;
+import net.minecraft.world.phys.Vec3;
+
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
 
 /**
@@ -334,5 +341,74 @@ public class PiggyAdminTests {
         System.out.println("[TEST] Check console logs for: [XRAY] alert with ratio information");
 
         context.succeed();
+    }
+
+    /**
+     * Test the new Hybrid Heuristic X-Ray detector with random ore positioning.
+     */
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void testHybridXRayHeuristics(GameTestHelper context) {
+        // 1. Setup Config
+        PiggyServerConfig config = PiggyServerConfig.getInstance();
+        config.xrayHybridCheck = true;
+        config.xrayHybridThreshold = 0.04; 
+
+        net.minecraft.server.level.ServerLevel level = context.getLevel();
+        FakePlayer player = FakePlayer.get(level);
+        Random random = new Random();
+
+        // 2. Setup environment (ensure darkness for the heuristic check to pass)
+        BlockPos startPos = new BlockPos(1, 1, 1);
+        for (int x = 0; x < 45; x++) {
+            for (int y = 0; y < 3; y++) {
+                for (int z = 0; z < 3; z++) {
+                    context.setBlock(startPos.offset(x, y, z), Blocks.STONE);
+                }
+            }
+        }
+
+        // 3. Place Ores with Random Variation
+        // Place ore cluster at x=25-30, so they are within radius for most of the 40-block sequence
+        int oreX = 25 + random.nextInt(5);
+        int oreZ = 1;
+        BlockPos orePos = startPos.offset(oreX, 1, oreZ);
+        context.setBlock(orePos, Blocks.DIAMOND_ORE);
+
+        // 4. Force Ore Cache Sync (Ensures deterministic test behavior)
+        OreCacheManager.INSTANCE.scanAndCacheChunkSync(level, level.getChunkAt(context.absolutePos(orePos)));
+
+        // 5. Simulate Mining Path
+        context.runAfterDelay(1, () -> {
+            HybridXRayDetector detector = new HybridXRayDetector();
+            boolean alertTriggered = false;
+
+            System.out.println("[TEST] Starting hybrid heuristic simulation towards " + orePos + " (Absolute: " + context.absolutePos(orePos) + ")");
+
+            for (int i = 0; i < 40; i++) {
+                BlockPos minePos = startPos.offset(i, 1, 1);
+                
+                // Simulate player movement and looking
+                // Center the player in the block and look directly at the target ore
+                Vec3 mineCenterAbs = context.absoluteVec(Vec3.atCenterOf(minePos));
+                Vec3 eyePos = mineCenterAbs.add(0, 0.5, 0); // Eye level in the current block
+                Vec3 absoluteOreCenter = context.absoluteVec(Vec3.atCenterOf(orePos));
+                Vec3 lookVec = absoluteOreCenter.subtract(eyePos).normalize();
+
+                player.setPos(eyePos.x, eyePos.y - 1.5, eyePos.z);
+                player.setYRot((float) Math.toDegrees(Math.atan2(-lookVec.x, lookVec.z)));
+                player.setXRot((float) Math.toDegrees(Math.asin(-lookVec.y)));
+
+                // Evaluate block break
+                ActionContext actionContext = new ActionContext(level, context.absolutePos(minePos), Blocks.STONE.defaultBlockState());
+                if (detector.evaluate(player, actionContext)) {
+                    alertTriggered = true;
+                    System.out.println("[TEST] Hybrid Alert observed at sequence block " + i);
+                }
+            }
+
+            context.assertTrue(alertTriggered, "Hybrid X-Ray alert should have been triggered during the mining sequence (Threshold: " + config.xrayHybridThreshold + ")");
+            System.out.println("[TEST] Hybrid X-Ray heuristics test sequence successfully triggered suspicion alert!");
+            context.succeed();
+        });
     }
 }
