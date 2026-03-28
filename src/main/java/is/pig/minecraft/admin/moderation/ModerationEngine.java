@@ -38,6 +38,7 @@ public class ModerationEngine {
                 regexChecker.reload();
             }
         }
+        is.pig.minecraft.admin.moderation.WordListRegistry.refresh();
         moderatedMessages.clear();
     }
 

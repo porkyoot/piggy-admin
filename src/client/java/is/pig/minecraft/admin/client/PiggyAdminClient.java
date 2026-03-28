@@ -40,7 +40,11 @@ public class PiggyAdminClient implements ClientModInitializer {
                                 config.xrayMinBlocks,
                                 config.geminiApiKey,
                                 config.geminiSystemPrompt,
-                                config.geminiModel
+                                config.geminiModel,
+                                config.wordListLanguages,
+                                config.wordListEnabled,
+                                config.wordListCacheDays,
+                                config.wordListFetchTimeoutSeconds
                             );
                             ClientPlayNetworking.send(payload);
                             context.getSource().sendFeedback(Component.literal("§aConfig synced to server."));

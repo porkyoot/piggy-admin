@@ -261,8 +261,8 @@ public class HistoryManager {
         history.add(entry);
         save();
         
-        is.pig.minecraft.admin.util.AdminNotifier.notifyAdmins(player, "BLOCKED", pos, 
-            net.minecraft.network.chat.Component.literal("Blocked " + category + ": " + content));
+        is.pig.minecraft.admin.util.AdminNotifier.notifyAdmins(player, category.name(), pos, 
+            net.minecraft.network.chat.Component.literal(": " + content));
     }
 
     public static void logSign(String playerName, UUID uuid, String text, String worldId, BlockPos pos) {

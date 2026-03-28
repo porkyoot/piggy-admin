@@ -21,7 +21,11 @@ public record UpdateAdminConfigPayload(
         int xrayMinBlocks,
         String geminiApiKey,
         String geminiSystemPrompt,
-        String geminiModel
+        String geminiModel,
+        Map<String, Boolean> wordListLanguages,
+        boolean wordListEnabled,
+        int wordListCacheDays,
+        int wordListFetchTimeoutSeconds
 ) implements CustomPacketPayload {
     public static final Type<UpdateAdminConfigPayload> TYPE = new Type<>(
             ResourceLocation.fromNamespaceAndPath("piggy-admin", "update_admin_config"));
@@ -49,7 +53,11 @@ public record UpdateAdminConfigPayload(
                 buf.readInt(),
                 buf.readUtf(),
                 buf.readUtf(),
-                buf.readUtf()
+                buf.readUtf(),
+                buf.readMap(FriendlyByteBuf::readUtf, FriendlyByteBuf::readBoolean),
+                buf.readBoolean(),
+                buf.readInt(),
+                buf.readInt()
         );
     }
 
@@ -69,6 +77,10 @@ public record UpdateAdminConfigPayload(
         buf.writeUtf(geminiApiKey);
         buf.writeUtf(geminiSystemPrompt);
         buf.writeUtf(geminiModel);
+        buf.writeMap(wordListLanguages, FriendlyByteBuf::writeUtf, FriendlyByteBuf::writeBoolean);
+        buf.writeBoolean(wordListEnabled);
+        buf.writeInt(wordListCacheDays);
+        buf.writeInt(wordListFetchTimeoutSeconds);
     }
 
     @Override

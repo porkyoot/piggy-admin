@@ -58,6 +58,19 @@ public class PiggyServerConfig {
     // --- Moderation Configuration ---
     public boolean moderationEnabled = true;
     public java.util.List<ModerationRule> moderationRules = new java.util.ArrayList<>();
+
+    // --- Word List Configuration ---
+    /** Master switch: when false, no lists are downloaded and word-list rules are cleared. */
+    public boolean wordListEnabled = true;
+    /**
+     * ISO-639-1 language code → enabled. Only enabled languages are fetched.
+     * All 26 LDNOOBW languages are pre-populated; only "en" defaults to true.
+     */
+    public java.util.Map<String, Boolean> wordListLanguages = new java.util.LinkedHashMap<>();
+    /** How many days a cached word-list file is considered fresh before re-downloading. */
+    public int wordListCacheDays = 7;
+    /** Per-source HTTP fetch timeout in seconds. */
+    public int wordListFetchTimeoutSeconds = 15;
     
     // --- Gemini LLM Configuration ---
     public String geminiApiKey = "YOUR_GEMINI_API_KEY_HERE";
@@ -99,6 +112,7 @@ public class PiggyServerConfig {
         }
 
         INSTANCE.ensureAllFeatures();
+        INSTANCE.ensureWordListLanguages();
         INSTANCE.moderationRules.removeIf(rule -> rule == null || rule.category == null);
         INSTANCE.ensureDefaultModerationRules();
         save();
@@ -123,6 +137,13 @@ public class PiggyServerConfig {
             LOGGER.info("Adding default moderation rules...");
             moderationRules.add(new ModerationRule(ModerationCategory.SWEARS, "all", "(?i)\\b(fuck|shit|asshole)\\b"));
             moderationRules.add(new ModerationRule(ModerationCategory.DOX, "all", "\\b\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\b")); // IP regex
+        }
+    }
+
+    private void ensureWordListLanguages() {
+        // All language codes supported by LDNOOBW, plus the two extra English sources
+        for (String lang : is.pig.minecraft.admin.moderation.WordListRegistry.ALL_LANGUAGE_CODES) {
+            wordListLanguages.putIfAbsent(lang, "en".equals(lang));
         }
     }
 

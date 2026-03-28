@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 public class RegexModerationChecker implements ModerationChecker {
     private static final Logger LOGGER = LoggerFactory.getLogger("RegexModeration");
     private List<CompiledRule> compiledRules = new ArrayList<>();
+    private static volatile List<CompiledRule> wordListRules = new ArrayList<>();
 
     public RegexModerationChecker() {
         reload();
@@ -27,11 +28,23 @@ public class RegexModerationChecker implements ModerationChecker {
                     newRules.add(new CompiledRule(rule.category, Pattern.compile(rule.regex)));
                 } catch (PatternSyntaxException e) {
                     // Log error but continue
-                    System.err.println("Invalid regex in moderation rule: " + rule.regex);
+                    LOGGER.warn("Invalid regex in moderation rule: {}", rule.regex);
                 }
             }
         }
         this.compiledRules = newRules;
+    }
+
+    /**
+     * Injects compiled patterns from external word-list databases.
+     */
+    public static void injectWordListPatterns(java.util.Map<String, Pattern> patternsByLang) {
+        List<CompiledRule> newRules = new ArrayList<>();
+        for (var entry : patternsByLang.entrySet()) {
+            newRules.add(new CompiledRule(ModerationCategory.SWEARS, entry.getValue()));
+        }
+        wordListRules = newRules;
+        LOGGER.info("Injected {} word-list patterns.", newRules.size());
     }
 
     @Override
@@ -42,6 +55,12 @@ public class RegexModerationChecker implements ModerationChecker {
                     LOGGER.debug("Regex match found for category {}: {}", rule.category, message);
                     return ModerationResult.blocked(rule.category, "Regex match: " + rule.category);
                 }
+            }
+            for (CompiledRule rule : wordListRules) {
+                 if (rule.pattern.matcher(message).find()) {
+                     LOGGER.debug("Word-list match found: {}", message);
+                     return ModerationResult.blocked(rule.category, "Word-list match");
+                 }
             }
             return ModerationResult.SAFE;
         });

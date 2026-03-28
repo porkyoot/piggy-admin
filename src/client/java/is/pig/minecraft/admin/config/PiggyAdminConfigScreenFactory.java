@@ -3,6 +3,9 @@ package is.pig.minecraft.admin.config;
 import dev.isxander.yacl3.api.*;
 import dev.isxander.yacl3.api.controller.TickBoxControllerBuilder;
 import dev.isxander.yacl3.api.controller.StringControllerBuilder;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import dev.isxander.yacl3.api.controller.FloatSliderControllerBuilder;
 import dev.isxander.yacl3.api.controller.IntegerSliderControllerBuilder;
 import is.pig.minecraft.lib.features.CheatFeature;
@@ -77,6 +80,32 @@ public class PiggyAdminConfigScreenFactory {
                                         .build())
                                 .build())
                                 
+                        // Word Lists Configuration
+                        .group(OptionGroup.createBuilder()
+                                .name(Component.literal("Word Lists"))
+                                .option(Option.<Boolean>createBuilder()
+                                        .name(Component.literal("Enable Word Lists"))
+                                        .description(OptionDescription.of(Component.literal("Enable downloading and using shared profanity databases (LDNOOBW, etc.).")))
+                                        .binding(true, () -> config.wordListEnabled, v -> config.wordListEnabled = v)
+                                        .controller(TickBoxControllerBuilder::create)
+                                        .build())
+                                .option(Option.<Integer>createBuilder()
+                                        .name(Component.literal("Cache Days"))
+                                        .description(OptionDescription.of(Component.literal("Number of days to cache word lists locally before re-fetching.")))
+                                        .binding(7, () -> config.wordListCacheDays, v -> config.wordListCacheDays = v)
+                                        .controller(opt -> IntegerSliderControllerBuilder.create(opt).range(0, 30).step(1))
+                                        .build())
+                                .option(Option.<Integer>createBuilder()
+                                        .name(Component.literal("Fetch Timeout (s)"))
+                                        .description(OptionDescription.of(Component.literal("Timeout for fetching word lists from online sources.")))
+                                        .binding(15, () -> config.wordListFetchTimeoutSeconds, v -> config.wordListFetchTimeoutSeconds = v)
+                                        .controller(opt -> IntegerSliderControllerBuilder.create(opt).range(5, 60).step(1))
+                                        .build())
+                                .build())
+                        
+                        // Word List Languages
+                        .group(createWordListLanguagesGroup(config))
+                                
                         // Anti-Cheat Group
                         .group(OptionGroup.createBuilder()
                                 .name(Component.literal("Anti-Cheat"))
@@ -141,7 +170,11 @@ public class PiggyAdminConfigScreenFactory {
                             config.xrayMinBlocks,
                             config.geminiApiKey,
                             config.geminiSystemPrompt,
-                            config.geminiModel
+                            config.geminiModel,
+                            config.wordListLanguages,
+                            config.wordListEnabled,
+                            config.wordListCacheDays,
+                            config.wordListFetchTimeoutSeconds
                         );
                         net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(payload);
                     }
@@ -151,6 +184,28 @@ public class PiggyAdminConfigScreenFactory {
 
                 .build()
                 .generateScreen(parent);
+    }
+
+    private static OptionGroup createWordListLanguagesGroup(PiggyServerConfig config) {
+        OptionGroup.Builder builder = OptionGroup.createBuilder()
+                .name(Component.literal("Word List Languages"))
+                .description(OptionDescription.of(Component.literal("Select which languages to moderate using online databases.")));
+
+        // Sort language codes for better UI experience
+        List<String> sortedLangs = new ArrayList<>(is.pig.minecraft.admin.moderation.WordListRegistry.ALL_LANGUAGE_CODES);
+        Collections.sort(sortedLangs);
+
+        for (String lang : sortedLangs) {
+            builder.option(Option.<Boolean>createBuilder()
+                    .name(Component.literal(lang.toUpperCase()))
+                    .binding(false, 
+                             () -> config.wordListLanguages.getOrDefault(lang, false), 
+                             v -> config.wordListLanguages.put(lang, v))
+                    .controller(TickBoxControllerBuilder::create)
+                    .build());
+        }
+
+        return builder.build();
     }
 
     private static OptionGroup createFeaturesGroup(PiggyServerConfig config) {

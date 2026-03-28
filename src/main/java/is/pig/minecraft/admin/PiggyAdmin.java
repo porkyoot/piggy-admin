@@ -11,6 +11,7 @@ import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 // import net.minecraft.server.players.ServerOpListEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 
 public class PiggyAdmin implements ModInitializer {
     public static final String MOD_ID = "piggy-admin";
@@ -22,6 +23,10 @@ public class PiggyAdmin implements ModInitializer {
 
         is.pig.minecraft.admin.config.PiggyServerConfig.load();
         HistoryManager.load();
+
+        ServerLifecycleEvents.SERVER_STARTING.register(server -> {
+            is.pig.minecraft.admin.moderation.WordListRegistry.initialize(is.pig.minecraft.admin.config.PiggyServerConfig.getInstance());
+        });
 
         net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playS2C().register(
                 is.pig.minecraft.lib.network.SyncConfigPayload.TYPE,
@@ -75,6 +80,11 @@ public class PiggyAdmin implements ModInitializer {
                 config.geminiApiKey = payload.geminiApiKey();
                 config.geminiSystemPrompt = payload.geminiSystemPrompt();
                 config.geminiModel = payload.geminiModel();
+                config.wordListLanguages.clear();
+                config.wordListLanguages.putAll(payload.wordListLanguages());
+                config.wordListEnabled = payload.wordListEnabled();
+                config.wordListCacheDays = payload.wordListCacheDays();
+                config.wordListFetchTimeoutSeconds = payload.wordListFetchTimeoutSeconds();
                 
                 is.pig.minecraft.admin.config.PiggyServerConfig.save();
                 is.pig.minecraft.admin.moderation.ModerationEngine.getInstance().reload();
