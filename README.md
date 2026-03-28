@@ -27,13 +27,23 @@ Feel free to fork the project or submit a Pull Request if you want to contribute
 *   **Strict Enforcement**: If the server disables cheats, client-side overrides are ignored, ensuring fair play.
 *   **Granular Control**: Enable/disable specific features individually (e.g., allow tool swapping but forbid fast placement).
 
-### 🕵️ X-Ray Detection
-*   **Heuristic Detection**: The server monitors mining patterns to detect suspicious behavior.
-*   **Ratio Analysis**: Calculates the ratio of rare ores mined versus common blocks.
-    *   **Rare Ores**: Diamond, Ancient Debris, Iron, Gold, Emerald.
-    *   **Common Blocks**: Stone, Deepslate, Netherrack, etc.
-*   **Configurable Thresholds**: Adjust sensitivity via `xrayMaxRatio` in config.
-*   **Alerts**: Admins are notified if a player's mining ratio exceeds the configured threshold.
+### 🕵️ Advanced X-Ray Detection
+Piggy Admin uses a multi-layered heuristic engine to detect suspicious mining patterns without false positives from branch mining.
+
+*   **Ore Cache Manager**: Asynchronously tracks valuable ore locations in an efficient `ConcurrentHashMap`, minimizing main-thread impact.
+*   **Vector Correlation**: Uses `HeuristicsMathUtil` to calculate the mathematical correlation between a player's look vector and the distance to invisible ores.
+*   **Hybrid Detector**: Combines raw mining ratios with semantic analysis of "suspicious turns" and "direct-to-ore" paths.
+*   **Sensitivity Levels**: From `LOW` (relaxed) to `PARANOID` (strict), configurable via `xraySensitivity`.
+*   **Admin Alerts**: Real-time notifications for admins with clickable teleport links to the suspect's coordinates.
+
+### 📜 Forensic Data & Attribution
+The mod acts as a powerful investigation tool for griefing.
+
+*   **Explosion Attribution**: Tracks the true owner of TNT, even if sparked by a flint-and-steel, fire charge, or other entities.
+*   **Creeper Ownership**: Identifies players who intentionally ignite creepers (using Flint & Steel) to destroy territory.
+*   **Lava & Fire Blame**: Specialized trackers for fluid flow and block-fire spread. Even if the original source block is gone, the mod maintains a history of who placed it.
+*   **Dispenser Tracking**: Custom mixins at the dispenser level attributes all dispensed projectiles or bucket operations to the player who placed or last interacted with the dispenser.
+*   **Interactive Notifications**: `AdminNotifier` sends rich, hoverable chat components to OPs, allowing for instant "Blame Lookup" directly from an alert.
 
 ### 📜 Moderation Engine
 *   **AI-Powered Moderation**: Integrates with **Google Gemini AI** to automatically filter toxic or inappropriate chat and sign text.
@@ -78,9 +88,11 @@ All commands require **OP level 2** or higher.
 *   `/piggy sync`: Manually trigger a synchronization of all admin settings and moderation rules to all connected clients.
 
 ### Investigation & Logging
-*   `/blame`: Look at a sign or block and run this command to see who placed/modified it and when.
-*   `/logs <player_name>`: View the recent chat, sign, tnt, and moderation history for a specific player.
-    *   **Clickable Coordinates**: Sign logs include coordinates that you can click to teleport to.
+*   `/blame`: Look at a block or sign and run this to see the interaction history.
+    *   Works on: Fire, Lava, Signs, Containers, and exploded regions.
+*   `/logs <player>`: View a categorized history for a player (Chat, Sign, Fire, Explosion, Moderation).
+    *   **Clickable Teleports**: Log entries include coordinates that you can click to investigate the scene.
+*   `/piggy xray <clear|stats>`: Manage the X-Ray heuristic cache or view current player standings.
 
 ---
 
