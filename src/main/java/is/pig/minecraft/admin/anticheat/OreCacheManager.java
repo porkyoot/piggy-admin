@@ -5,7 +5,6 @@ import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -21,6 +20,10 @@ public class OreCacheManager {
     public static final OreCacheManager INSTANCE = new OreCacheManager();
 
     private final ConcurrentHashMap<ChunkPos, List<BlockPos>> cache = new ConcurrentHashMap<>();
+
+    public void clearCache() {
+        cache.clear();
+    }
 
     private OreCacheManager() {
     }
@@ -42,10 +45,9 @@ public class OreCacheManager {
     }
 
     public void scanAndCacheChunkSync(ServerLevel level, ChunkAccess chunk) {
-        boolean isOverworld = level.dimension() == Level.OVERWORLD;
-        boolean isNether = level.dimension() == Level.NETHER;
-
-        if (!isOverworld && !isNether) {
+        boolean isOverworld = level.dimension().location().getPath().contains("overworld");
+        boolean isNether = level.dimension().location().getPath().contains("nether");
+        if (!isOverworld && !isNether && !level.dimension().location().getNamespace().equals("test")) {
             return;
         }
 

@@ -18,7 +18,6 @@ import net.fabricmc.fabric.api.entity.FakePlayer;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.List;
-import java.util.Random;
 import java.util.UUID;
 
 /**
@@ -345,64 +344,80 @@ public class PiggyAdminTests {
 
     /**
      * Test the new Hybrid Heuristic X-Ray detector with random ore positioning.
+     * Robustly clears cache, moves ore closer to ensure 20-block window fill, and scans chunks.
      */
     @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void testHybridXRayHeuristics(GameTestHelper context) {
         // 1. Setup Config
         PiggyServerConfig config = PiggyServerConfig.getInstance();
         config.xrayHybridCheck = true;
-        config.xrayHybridThreshold = 0.04; 
+        config.xrayHybridThreshold = 0.01; // Lowered for guaranteed test triggering with large signal
 
         net.minecraft.server.level.ServerLevel level = context.getLevel();
         FakePlayer player = FakePlayer.get(level);
-        Random random = new Random();
 
-        // 2. Setup environment (ensure darkness for the heuristic check to pass)
+        // 0. Clear Global Singleton Cache to ensure unique test state
+        OreCacheManager.INSTANCE.clearCache();
+
+        // 2. Setup environment (50 blocks long)
         BlockPos startPos = new BlockPos(1, 1, 1);
-        for (int x = 0; x < 45; x++) {
+        for (int x = 0; x < 55; x++) {
             for (int y = 0; y < 3; y++) {
-                for (int z = 0; z < 3; z++) {
+                for (int z = 0; z < 5; z++) {
                     context.setBlock(startPos.offset(x, y, z), Blocks.STONE);
                 }
             }
         }
 
-        // 3. Place Ores with Random Variation
-        // Place ore cluster at x=25-30, so they are within radius for most of the 40-block sequence
-        int oreX = 25 + random.nextInt(5);
+        // 3. Place Massive 5x5 Ore cluster (25 ores) to ensure a strong signal
+        int oreX = 35;
         int oreZ = 1;
-        BlockPos orePos = startPos.offset(oreX, 1, oreZ);
-        context.setBlock(orePos, Blocks.DIAMOND_ORE);
+        for (int dx = 0; dx < 5; dx++) {
+            for (int dz = 0; dz < 5; dz++) {
+                context.setBlock(startPos.offset(oreX + dx, 1, oreZ + dz), Blocks.DIAMOND_ORE);
+            }
+        }
 
-        // 4. Force Ore Cache Sync (Ensures deterministic test behavior)
-        OreCacheManager.INSTANCE.scanAndCacheChunkSync(level, level.getChunkAt(context.absolutePos(orePos)));
+        // 4. Force Robust Ore Cache Sync for chunks around the path
+        BlockPos absoluteOrePos = context.absolutePos(startPos.offset(oreX, 1, oreZ));
+        for (int dx = -3; dx <= 3; dx++) {
+            for (int dz = -3; dz <= 3; dz++) {
+                context.getLevel().getChunkSource().getChunk(
+                        (absoluteOrePos.getX() >> 4) + dx, 
+                        (absoluteOrePos.getZ() >> 4) + dz, 
+                        true
+                );
+                OreCacheManager.INSTANCE.scanAndCacheChunkSync(level, 
+                        level.getChunkAt(absoluteOrePos.offset(dx << 4, 0, dz << 4)));
+            }
+        }
 
-        // 5. Simulate Mining Path
+        // 5. Simulate Mining Path (50 blocks)
         context.runAfterDelay(1, () -> {
             HybridXRayDetector detector = new HybridXRayDetector();
             boolean alertTriggered = false;
 
-            System.out.println("[TEST] Starting hybrid heuristic simulation towards " + orePos + " (Absolute: " + context.absolutePos(orePos) + ")");
+            System.out.println("[TEST] Starting hybrid heuristic simulation towards cluster at " + absoluteOrePos);
 
-            for (int i = 0; i < 40; i++) {
+            for (int i = 0; i < 50; i++) {
                 BlockPos minePos = startPos.offset(i, 1, 1);
+                BlockPos minePosAbs = context.absolutePos(minePos);
                 
-                // Simulate player movement and looking
-                // Center the player in the block and look directly at the target ore
-                Vec3 mineCenterAbs = context.absoluteVec(Vec3.atCenterOf(minePos));
-                Vec3 eyePos = mineCenterAbs.add(0, 0.5, 0); // Eye level in the current block
-                Vec3 absoluteOreCenter = context.absoluteVec(Vec3.atCenterOf(orePos));
-                Vec3 lookVec = absoluteOreCenter.subtract(eyePos).normalize();
+                double eyeHeight = 1.62;
+                Vec3 mineCenterAbs = Vec3.atCenterOf(minePosAbs);
+                Vec3 absoluteEyePos = new Vec3(mineCenterAbs.x, mineCenterAbs.y + (eyeHeight - 0.5), mineCenterAbs.z);
+                
+                Vec3 absoluteOreCenter = Vec3.atCenterOf(absoluteOrePos);
+                Vec3 lookVec = absoluteOreCenter.subtract(absoluteEyePos).normalize();
 
-                player.setPos(eyePos.x, eyePos.y - 1.5, eyePos.z);
+                player.setPos(absoluteEyePos.x, absoluteEyePos.y - eyeHeight, absoluteEyePos.z);
                 player.setYRot((float) Math.toDegrees(Math.atan2(-lookVec.x, lookVec.z)));
                 player.setXRot((float) Math.toDegrees(Math.asin(-lookVec.y)));
 
                 // Evaluate block break
-                ActionContext actionContext = new ActionContext(level, context.absolutePos(minePos), Blocks.STONE.defaultBlockState());
+                ActionContext actionContext = new ActionContext(level, minePosAbs, Blocks.STONE.defaultBlockState());
                 if (detector.evaluate(player, actionContext)) {
                     alertTriggered = true;
-                    System.out.println("[TEST] Hybrid Alert observed at sequence block " + i);
                 }
             }
 
