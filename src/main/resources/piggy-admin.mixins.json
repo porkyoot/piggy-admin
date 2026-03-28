@@ -11,7 +11,9 @@
 		"EndCrystalItemMixin",
 		"CreeperMixin",
 		"FlintAndSteelItemMixin",
-		"FireBlockMixin"
+		"FireBlockMixin",
+		"FireChargeItemMixin",
+		"BucketItemMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
