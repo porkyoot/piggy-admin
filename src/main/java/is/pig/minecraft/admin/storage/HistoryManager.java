@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 public class HistoryManager {
@@ -23,13 +24,13 @@ public class HistoryManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    private static List<HistoryEntry> history = new ArrayList<>();
+    private static List<HistoryEntry> history = new CopyOnWriteArrayList<>();
 
-    public static HistoryEntry logTnt(BlameData blame) {
-        return logTnt(null, blame);
+    public static HistoryEntry logExplosion(BlameData blame, String tag) {
+        return logExplosion(null, blame, tag);
     }
 
-    public static HistoryEntry logTnt(net.minecraft.server.level.ServerPlayer player, BlameData blame) {
+    public static HistoryEntry logExplosion(net.minecraft.server.level.ServerPlayer player, BlameData blame, String tag) {
         HistoryEntry entry = new HistoryEntry(
                 LocalDateTime.now().format(TIME_FORMATTER),
                 blame.authorName(),
@@ -38,10 +39,17 @@ public class HistoryManager {
                 blame.action()
         );
         entry.setLocation(blame.worldId(), blame.pos().getX(), blame.pos().getY(), blame.pos().getZ());
+        
+        if (player != null) {
+            entry.putMetadata("forensic_player", is.pig.minecraft.lib.util.telemetry.formatter.PiggyTelemetryFormatter.formatPlayer(player));
+            entry.putMetadata("forensic_block", is.pig.minecraft.lib.util.telemetry.formatter.PiggyTelemetryFormatter.formatBlock(blame.pos(), player.serverLevel().getBlockState(blame.pos()), player.serverLevel()));
+        }
+
         history.add(entry);
         save();
         
-        is.pig.minecraft.admin.util.AdminNotifier.notifyAdmins(player, "TNT", blame.pos(), net.minecraft.network.chat.Component.literal(blame.action()));
+        is.pig.minecraft.admin.PiggyAdmin.LOGGER.info("[Admin] Logged {} incident for {} at {}, {}, {}", tag, blame.authorName(), blame.pos().getX(), blame.pos().getY(), blame.pos().getZ());
+        is.pig.minecraft.admin.util.AdminNotifier.notifyAdmins(player, tag, blame.pos(), net.minecraft.network.chat.Component.literal(blame.action()));
         return entry;
     }
 
@@ -58,9 +66,16 @@ public class HistoryManager {
                 blame.action()
         );
         entry.setLocation(blame.worldId(), blame.pos().getX(), blame.pos().getY(), blame.pos().getZ());
+        
+        if (player != null) {
+            entry.putMetadata("forensic_player", is.pig.minecraft.lib.util.telemetry.formatter.PiggyTelemetryFormatter.formatPlayer(player));
+            entry.putMetadata("forensic_block", is.pig.minecraft.lib.util.telemetry.formatter.PiggyTelemetryFormatter.formatBlock(blame.pos(), player.serverLevel().getBlockState(blame.pos()), player.serverLevel()));
+        }
+
         history.add(entry);
         save();
         
+        is.pig.minecraft.admin.PiggyAdmin.LOGGER.info("[Admin] Logged FIRE incident for {} at {}, {}, {}", blame.authorName(), blame.pos().getX(), blame.pos().getY(), blame.pos().getZ());
         is.pig.minecraft.admin.util.AdminNotifier.notifyAdmins(player, "FIRE", blame.pos(), net.minecraft.network.chat.Component.literal(blame.action()));
         return entry;
     }
@@ -78,10 +93,17 @@ public class HistoryManager {
                 authorName + " burned " + blockName
         );
         entry.setLocation(worldId, pos.getX(), pos.getY(), pos.getZ());
+        
+        net.minecraft.server.level.ServerPlayer player = server != null ? server.getPlayerList().getPlayer(authorUuid) : null;
+        if (player != null) {
+            entry.putMetadata("forensic_player", is.pig.minecraft.lib.util.telemetry.formatter.PiggyTelemetryFormatter.formatPlayer(player));
+            entry.putMetadata("forensic_block", is.pig.minecraft.lib.util.telemetry.formatter.PiggyTelemetryFormatter.formatBlock(pos, player.serverLevel().getBlockState(pos), player.serverLevel()));
+        }
+
         history.add(entry);
         save();
         
-        net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayer(authorUuid);
+        is.pig.minecraft.admin.PiggyAdmin.LOGGER.info("[Admin] Logged BURN incident for {} at {}, {}, {}", authorName, pos.getX(), pos.getY(), pos.getZ());
         if (player != null) {
             is.pig.minecraft.admin.util.AdminNotifier.notifyAdmins(player, "BURN", pos, net.minecraft.network.chat.Component.literal(authorName + " burned " + blockName));
         }
@@ -99,6 +121,7 @@ public class HistoryManager {
         entry.setLocation(worldId, pos.getX(), pos.getY(), pos.getZ());
         history.add(entry);
         save();
+        is.pig.minecraft.admin.PiggyAdmin.LOGGER.info("[Admin] Logged EXPLOSION incident ({}) at {}, {}, {}", source, pos.getX(), pos.getY(), pos.getZ());
         return entry;
     }
 
@@ -132,12 +155,12 @@ public class HistoryManager {
     public static void load() {
         if (HISTORY_FILE.exists()) {
             try (FileReader reader = new FileReader(HISTORY_FILE)) {
-                Type listType = new TypeToken<ArrayList<HistoryEntry>>(){}.getType();
+                Type listType = new TypeToken<CopyOnWriteArrayList<HistoryEntry>>(){}.getType();
                 history = GSON.fromJson(reader, listType);
-                if (history == null) history = new ArrayList<>();
-            } catch (IOException e) {
-                e.printStackTrace();
-                history = new ArrayList<>();
+                if (history == null) history = new CopyOnWriteArrayList<>();
+            } catch (Exception e) {
+                is.pig.minecraft.admin.PiggyAdmin.LOGGER.error("Failed to load history from " + HISTORY_FILE, e);
+                history = new CopyOnWriteArrayList<>();
             }
         }
     }
@@ -158,9 +181,16 @@ public class HistoryManager {
                 blame.action()
         );
         entry.setLocation(blame.worldId(), blame.pos().getX(), blame.pos().getY(), blame.pos().getZ());
+        
+        if (player != null) {
+            entry.putMetadata("forensic_player", is.pig.minecraft.lib.util.telemetry.formatter.PiggyTelemetryFormatter.formatPlayer(player));
+            entry.putMetadata("forensic_block", is.pig.minecraft.lib.util.telemetry.formatter.PiggyTelemetryFormatter.formatBlock(blame.pos(), player.serverLevel().getBlockState(blame.pos()), player.serverLevel()));
+        }
+
         history.add(entry);
         save();
 
+        is.pig.minecraft.admin.PiggyAdmin.LOGGER.info("[Admin] Logged LAVA incident for {} at {}, {}, {}", blame.authorName(), blame.pos().getX(), blame.pos().getY(), blame.pos().getZ());
         is.pig.minecraft.admin.util.AdminNotifier.notifyAdmins(player, "LAVA", blame.pos(), net.minecraft.network.chat.Component.literal(blame.action()));
     }
 
@@ -173,8 +203,17 @@ public class HistoryManager {
                 "Dispensed Lava (Last Editor: " + lastPlayerName + ")"
         );
         entry.setLocation(worldId, pos.getX(), pos.getY(), pos.getZ());
+        
+        net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayer(lastPlayerUuid);
+        if (player != null) {
+            entry.putMetadata("forensic_player", is.pig.minecraft.lib.util.telemetry.formatter.PiggyTelemetryFormatter.formatPlayer(player));
+            entry.putMetadata("forensic_block", is.pig.minecraft.lib.util.telemetry.formatter.PiggyTelemetryFormatter.formatBlock(pos, player.serverLevel().getBlockState(pos), player.serverLevel()));
+        }
+
         history.add(entry);
         save();
+        
+        is.pig.minecraft.admin.PiggyAdmin.LOGGER.info("[Admin] Logged DISPENSER/LAVA incident (Last Editor: {}) at {}, {}, {}", lastPlayerName, pos.getX(), pos.getY(), pos.getZ());
         
         // Notify admins with "DISPENSER" tag using the new global notification system
         is.pig.minecraft.admin.util.AdminNotifier.notifyAdmins(server, lastPlayerName, "DISPENSER/LAVA", pos, worldId,
@@ -190,8 +229,17 @@ public class HistoryManager {
                 "Dispensed Fire Charge (Last Editor: " + lastPlayerName + ")"
         );
         entry.setLocation(worldId, pos.getX(), pos.getY(), pos.getZ());
+        
+        net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayer(lastPlayerUuid);
+        if (player != null) {
+            entry.putMetadata("forensic_player", is.pig.minecraft.lib.util.telemetry.formatter.PiggyTelemetryFormatter.formatPlayer(player));
+            entry.putMetadata("forensic_block", is.pig.minecraft.lib.util.telemetry.formatter.PiggyTelemetryFormatter.formatBlock(pos, player.serverLevel().getBlockState(pos), player.serverLevel()));
+        }
+
         history.add(entry);
         save();
+
+        is.pig.minecraft.admin.PiggyAdmin.LOGGER.info("[Admin] Logged DISPENSER/FIRE incident (Last Editor: {}) at {}, {}, {}", lastPlayerName, pos.getX(), pos.getY(), pos.getZ());
 
         is.pig.minecraft.admin.util.AdminNotifier.notifyAdmins(server, lastPlayerName, "DISPENSER/FIRE", pos, worldId,
             net.minecraft.network.chat.Component.literal("Dispensed Fire Charge - Last Editor: " + lastPlayerName));
@@ -208,14 +256,26 @@ public class HistoryManager {
         entry.setLocation(worldId, pos.getX(), pos.getY(), pos.getZ());
         history.add(entry);
         save();
+        is.pig.minecraft.admin.PiggyAdmin.LOGGER.info("[Admin] Logged LAVA_BURN incident for {} at {}, {}, {}", authorName, pos.getX(), pos.getY(), pos.getZ());
         // No admin notification for spread damage to avoid spam
     }
 
     public static void save() {
-        try (FileWriter writer = new FileWriter(HISTORY_FILE)) {
+        File tempFile = new File(HISTORY_FILE.getParentFile(), HISTORY_FILE.getName() + ".tmp");
+        try (FileWriter writer = new FileWriter(tempFile)) {
             GSON.toJson(history, writer);
-        } catch (IOException e) {
-            e.printStackTrace();
+            writer.flush();
+            writer.close();
+            
+            if (HISTORY_FILE.exists() && !HISTORY_FILE.delete()) {
+                is.pig.minecraft.admin.PiggyAdmin.LOGGER.warn("Failed to delete old history file: " + HISTORY_FILE);
+            }
+            
+            if (!tempFile.renameTo(HISTORY_FILE)) {
+                is.pig.minecraft.admin.PiggyAdmin.LOGGER.error("Failed to rename temp history file to " + HISTORY_FILE);
+            }
+        } catch (Exception e) {
+            is.pig.minecraft.admin.PiggyAdmin.LOGGER.error("Failed to save history to " + HISTORY_FILE, e);
         }
     }
 
@@ -256,11 +316,16 @@ public class HistoryManager {
         
         if (worldId != null && pos != null) {
             entry.setLocation(worldId, pos.getX(), pos.getY(), pos.getZ());
+            if (player != null) {
+                entry.putMetadata("forensic_player", is.pig.minecraft.lib.util.telemetry.formatter.PiggyTelemetryFormatter.formatPlayer(player));
+                entry.putMetadata("forensic_block", is.pig.minecraft.lib.util.telemetry.formatter.PiggyTelemetryFormatter.formatBlock(pos, player.serverLevel().getBlockState(pos), player.serverLevel()));
+            }
         }
         
         history.add(entry);
         save();
         
+        is.pig.minecraft.admin.PiggyAdmin.LOGGER.info("[Admin] Logged BLOCK/{} incident for {} at {}, {}, {}", category.name(), player.getName().getString(), pos.getX(), pos.getY(), pos.getZ());
         is.pig.minecraft.admin.util.AdminNotifier.notifyAdmins(player, category.name(), pos, 
             net.minecraft.network.chat.Component.literal(": " + content));
     }
@@ -287,15 +352,29 @@ public class HistoryManager {
                 text
         );
         entry.setLocation(worldId, pos.getX(), pos.getY(), pos.getZ());
+        
+        if (player != null) {
+            entry.putMetadata("forensic_player", is.pig.minecraft.lib.util.telemetry.formatter.PiggyTelemetryFormatter.formatPlayer(player));
+            entry.putMetadata("forensic_block", is.pig.minecraft.lib.util.telemetry.formatter.PiggyTelemetryFormatter.formatBlock(pos, player.serverLevel().getBlockState(pos), player.serverLevel()));
+        }
+
         history.add(entry);
         save();
         
+        is.pig.minecraft.admin.PiggyAdmin.LOGGER.info("[Admin] Logged SIGN incident for {} at {}, {}, {}", player.getName().getString(), pos.getX(), pos.getY(), pos.getZ());
         is.pig.minecraft.admin.util.AdminNotifier.notifyAdmins(player, "SIGN", pos, net.minecraft.network.chat.Component.literal(text));
     }
 
+    public static List<HistoryEntry> getGlobalRecent(int count) {
+        List<HistoryEntry> reversed = new ArrayList<>(history);
+        Collections.reverse(reversed);
+        return reversed.stream().limit(count).collect(Collectors.toList());
+    }
+
     public static List<HistoryEntry> getPlayerHistory(String playerName) {
+        if (playerName == null) return Collections.emptyList();
         return history.stream()
-                .filter(e -> e.playerName.equalsIgnoreCase(playerName))
+                .filter(e -> playerName.equalsIgnoreCase(e.playerName))
                 .collect(Collectors.toList());
     }
 
@@ -353,6 +432,7 @@ public class HistoryManager {
     public static Set<String> getKnownPlayerNames() {
         return history.stream()
                 .map(entry -> entry.playerName)
+                .filter(java.util.Objects::nonNull)
                 .collect(Collectors.toSet());
     }
 }

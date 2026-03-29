@@ -52,7 +52,7 @@ public abstract class AbstractContainerMenuMixin {
             is.pig.minecraft.admin.storage.BlameData blame = new is.pig.minecraft.admin.storage.BlameData(serverPlayer.getUUID(), serverPlayer.getName().getString(), action, worldId, pos);
 
             if (targetStack.is(Items.TNT) || targetStack.is(Items.TNT_MINECART)) {
-                HistoryManager.logTnt(serverPlayer, blame);
+                HistoryManager.logExplosion(serverPlayer, blame, "TNT");
             } else if (targetStack.is(Items.LAVA_BUCKET)) {
                 HistoryManager.logLava(serverPlayer, blame);
             } else if (targetStack.is(Items.FIRE_CHARGE) || targetStack.is(Items.FLINT_AND_STEEL)) {

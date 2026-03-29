@@ -1,9 +1,7 @@
 package is.pig.minecraft.admin.mixin;
 
 import is.pig.minecraft.admin.storage.HistoryManager;
-import is.pig.minecraft.admin.util.AdminNotifier;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.MinecartItem;
@@ -29,8 +27,7 @@ public class MinecartItemMixin {
                 String action = player.getName().getString() + " placed TNT Minecart";
 
                 is.pig.minecraft.admin.storage.BlameData blame = new is.pig.minecraft.admin.storage.BlameData(player.getUUID(), player.getName().getString(), action, worldId, pos);
-                HistoryManager.logTnt((net.minecraft.server.level.ServerPlayer) context.getPlayer(), blame);
-                AdminNotifier.notifyAdmins(player, "TNT", pos, Component.literal(action));
+                HistoryManager.logExplosion((net.minecraft.server.level.ServerPlayer) context.getPlayer(), blame, "TNT_MINECART");
             }
         }
     }

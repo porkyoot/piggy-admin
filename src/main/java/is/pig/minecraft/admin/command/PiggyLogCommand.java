@@ -56,34 +56,46 @@ public class PiggyLogCommand {
         if (hit.getType() == HitResult.Type.BLOCK) {
             pos = ((BlockHitResult) hit).getBlockPos();
         } else {
-            // If not looking at a block, check the position the player is standing in or near
             pos = entity.blockPosition();
         }
         
         String worldId = entity.level().dimension().location().toString();
 
-        // 1. Check for nearby historical incidents (10 block radius)
-        List<HistoryEntry> entries = HistoryManager.findEntriesNear(worldId, pos, 10.0, 
+        // 1. Check for nearby historical incidents (20 block radius)
+        List<HistoryEntry> entries = HistoryManager.findEntriesNear(worldId, pos, 20.0, 
                 HistoryEntry.Type.SIGN, HistoryEntry.Type.TNT, HistoryEntry.Type.FIRE, 
                 HistoryEntry.Type.BURN, HistoryEntry.Type.BLOCK, HistoryEntry.Type.LAVA);
 
         if (!entries.isEmpty()) {
-            context.getSource().sendSuccess(() -> Component.literal("Historical incidents within 10 blocks:").withStyle(ChatFormatting.GOLD), false);
+            context.getSource().sendSuccess(() -> Component.literal("Historical incidents within 20 blocks:").withStyle(ChatFormatting.GOLD), false);
             for (HistoryEntry e : entries) {
                 formatAndSendEntry(context, e, "Incident");
             }
-            return 1;
+        } else {
+            context.getSource().sendSuccess(() -> Component.literal("No nearby incidents found within 20 blocks. Showing global recent:").withStyle(ChatFormatting.YELLOW), false);
         }
 
-        // 2. Check for explosions that might have destroyed this block (fallback for older/distant explosions)
+        // 2. Also check for explosions that might have destroyed this area
         List<HistoryEntry> explosions = HistoryManager.findExplosionsAffecting(worldId, pos);
         if (!explosions.isEmpty()) {
             context.getSource().sendSuccess(() -> Component.literal("Explosions affecting this area:").withStyle(ChatFormatting.GOLD), false);
             for (HistoryEntry ex : explosions) {
                 formatAndSendEntry(context, ex, "Explosion");
             }
-        } else {
-            context.getSource().sendFailure(Component.literal("No history found within 10 blocks."));
+        }
+
+        // 3. Always show top 3 global recent as a "Top-Off" to ensure something is always visible
+        List<HistoryEntry> globals = HistoryManager.getGlobalRecent(3);
+        boolean showedGlobalHeader = false;
+        for (HistoryEntry g : globals) {
+            // Don't duplicate if it was already shown in nearby or explosions
+            if (entries.contains(g) || explosions.contains(g)) continue;
+            
+            if (!showedGlobalHeader) {
+                context.getSource().sendSuccess(() -> Component.literal("--- Global Recent ---").withStyle(ChatFormatting.DARK_GRAY), false);
+                showedGlobalHeader = true;
+            }
+            formatAndSendEntry(context, g, "Global");
         }
         
         return 1;
@@ -96,14 +108,22 @@ public class PiggyLogCommand {
                           (entry.type == HistoryEntry.Type.LAVA) ? "Lava" :
                           (entry.type == HistoryEntry.Type.BURN) ? "Fire Damage" : "Explosion";
         
+        Map<String, String> meta = entry.getMetadata();
+        String playerDisplay = meta.getOrDefault("forensic_player", entry.playerName != null ? entry.playerName : "Unknown");
+        String posDisplay = meta.getOrDefault("forensic_block", String.format("%d, %d, %d", entry.x, entry.y, entry.z));
+
         MutableComponent component = Component.literal("")
                 .append(Component.literal(label + " (" + typeLabel + "): ").withStyle(ChatFormatting.GOLD))
-                .append(Component.literal(entry.playerName != null ? entry.playerName : "Unknown").withStyle(ChatFormatting.RED))
+                .append(Component.literal(playerDisplay).withStyle(ChatFormatting.RED))
                 .append(Component.literal(" @ " + entry.timestamp).withStyle(ChatFormatting.GRAY))
+                .append(Component.literal(" loc " + posDisplay).withStyle(ChatFormatting.BLUE))
                 .append(Component.literal(" -> " + (entry.content != null ? entry.content : "")).withStyle(ChatFormatting.WHITE));
 
         // Add metadata if available
-        Map<String, String> meta = entry.getMetadata();
+        if (meta.containsKey("source")) {
+            component.append(Component.literal("\n  Source: ").withStyle(ChatFormatting.YELLOW))
+                     .append(Component.literal(meta.get("source")).withStyle(ChatFormatting.GRAY));
+        }
         if (meta.containsKey("nearby_players")) {
             component.append(Component.literal("\n  Nearby: ").withStyle(ChatFormatting.AQUA))
                      .append(Component.literal(meta.get("nearby_players")).withStyle(ChatFormatting.GRAY));
@@ -132,9 +152,12 @@ public class PiggyLogCommand {
             HistoryEntry e = entries.get(i);
             String actionTag = e.type.name();
             
+            Map<String, String> meta = e.getMetadata();
+            String playerDisplay = meta.getOrDefault("forensic_player", e.playerName != null ? e.playerName : "Unknown");
+
             MutableComponent logLine = Component.literal("")
                     .append(Component.literal("[" + e.timestamp + "] ").withStyle(ChatFormatting.DARK_GRAY))
-                    .append(Component.literal("<" + e.playerName + "> ").withStyle(ChatFormatting.GRAY));
+                    .append(Component.literal("<" + playerDisplay + "> ").withStyle(ChatFormatting.GRAY));
 
             MutableComponent tagComponent = Component.literal("[" + actionTag + "]").withStyle(ChatFormatting.YELLOW);
             
@@ -154,7 +177,9 @@ public class PiggyLogCommand {
                              .append(Component.literal(" " + (e.content != null ? e.content : "")).withStyle(ChatFormatting.WHITE));
 
             // Add rich metadata summary to log line
-            Map<String, String> meta = e.getMetadata();
+            if (meta.containsKey("source")) {
+                logLine.append(Component.literal(" [Source: " + meta.get("source") + "]").withStyle(ChatFormatting.YELLOW));
+            }
             if (meta.containsKey("victims")) {
                 logLine.append(Component.literal(" [Victims: " + meta.get("victims") + "]").withStyle(ChatFormatting.RED));
             }

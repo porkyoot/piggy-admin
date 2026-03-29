@@ -6,7 +6,6 @@ import is.pig.minecraft.admin.util.AdminNotifier;
 import is.pig.minecraft.admin.util.IgniterAccessor;
 import is.pig.minecraft.lib.util.telemetry.formatter.PiggyTelemetryFormatter;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Holder;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -18,6 +17,7 @@ import net.minecraft.world.entity.item.PrimedTnt;
 import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.level.Explosion;
+import net.minecraft.world.level.ExplosionDamageCalculator;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
@@ -36,7 +36,7 @@ public abstract class ExplosionMixin {
     @Shadow @Final private Level level;
     
     @Shadow @Final @Nullable private DamageSource damageSource;
-    @Shadow(aliases = {"exploder", "source", "entity"}) @Final @Nullable private Entity directEntity;
+    @Shadow @Final @Nullable private Entity source;
     @Shadow @Final private double x;
     @Shadow @Final private double y;
     @Shadow @Final private double z;
@@ -48,8 +48,8 @@ public abstract class ExplosionMixin {
     @Unique private double piggy$z;
     @Unique private float piggy$radius;
 
-    @Inject(method = "<init>(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/Entity;DDDFLjava/util/List;Lnet/minecraft/world/level/Explosion$BlockInteraction;Lnet/minecraft/core/particles/ParticleOptions;Lnet/minecraft/core/particles/ParticleOptions;Lnet/minecraft/core/Holder;)V", at = @At("RETURN"), require = 0)
-    private void onInit(Level level, Entity entity, double x, double y, double z, float radius, List<BlockPos> affectedBlocks, Explosion.BlockInteraction interaction, ParticleOptions p1, ParticleOptions p2, Holder<?> h, CallbackInfo ci) {
+    @Inject(method = "<init>(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/damagesource/DamageSource;Lnet/minecraft/world/level/ExplosionDamageCalculator;DDDFZLnet/minecraft/world/level/Explosion$BlockInteraction;Lnet/minecraft/core/particles/ParticleOptions;Lnet/minecraft/core/particles/ParticleOptions;Lnet/minecraft/core/Holder;)V", at = @At("RETURN"), require = 0)
+    private void onInit(Level level, Entity entity, DamageSource damageSource, ExplosionDamageCalculator calculator, double x, double y, double z, float radius, boolean fire, Explosion.BlockInteraction interaction, ParticleOptions p1, ParticleOptions p2, net.minecraft.core.Holder<?> h, CallbackInfo ci) {
         this.piggy$source = entity;
         this.piggy$x = x;
         this.piggy$y = y;
@@ -62,7 +62,7 @@ public abstract class ExplosionMixin {
         if (!(this.level instanceof ServerLevel world)) return;
 
         // Determine effective values from either shadowed fields (preferred in 1.21) or constructor-captured ones
-        Entity effectiveSource = (this.directEntity != null) ? this.directEntity : this.piggy$source;
+        Entity effectiveSource = (this.source != null) ? this.source : this.piggy$source;
         double effectiveX = (this.x != 0 || this.y != 0) ? this.x : this.piggy$x;
         double effectiveY = (this.x != 0 || this.y != 0) ? this.y : this.piggy$y;
         double effectiveZ = (this.x != 0 || this.y != 0) ? this.z : this.piggy$z;
@@ -106,10 +106,17 @@ public abstract class ExplosionMixin {
 
         HistoryEntry entry;
         if (playerCause != null) {
-            String fullAction = playerCause.getName().getString() + " caused Explosion - Source: " + causeName;
+            String fullAction = playerCause.getName().getString() + " caused Explosion";
             is.pig.minecraft.admin.storage.BlameData blame = new is.pig.minecraft.admin.storage.BlameData(playerCause.getUUID(), playerCause.getName().getString(), fullAction, worldId, pos);
-            entry = HistoryManager.logTnt(playerCause, blame);
-            AdminNotifier.notifyAdmins(playerCause, "EXPLOSION", pos, Component.literal(fullAction));
+
+            String tag = "EXPLOSION";
+            if (effectiveSource != null) {
+                tag = effectiveSource.getType().getDescription().getString().toUpperCase().replace(" ", "_");
+                if (effectiveSource instanceof PrimedTnt) tag = "TNT";
+                if (effectiveSource instanceof Creeper) tag = "CREEPER";
+            }
+            
+            entry = HistoryManager.logExplosion(playerCause, blame, tag);
         } else {
             entry = HistoryManager.logExplosion(causeName, details, worldId, pos);
             // Also notify admins for non-player explosions to ensure visibility
@@ -118,6 +125,7 @@ public abstract class ExplosionMixin {
 
         if (entry != null) {
             entry.putMetadata("radius", String.valueOf(effectiveRadius));
+            entry.putMetadata("source", causeName);
             
             List<ServerPlayer> nearbyPlayers = world.getPlayers(p -> p.distanceToSqr(effectiveX, effectiveY, effectiveZ) < 100 * 100);
             if (!nearbyPlayers.isEmpty()) {
