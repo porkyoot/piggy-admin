@@ -1,13 +1,13 @@
 package is.pig.minecraft.admin.mixin;
 
-import is.pig.minecraft.admin.storage.HistoryEntry;
+import is.pig.minecraft.admin.PiggyAdmin;
 import is.pig.minecraft.admin.storage.HistoryManager;
+import is.pig.minecraft.admin.telemetry.ExplosionDetonationEvent;
 import is.pig.minecraft.admin.util.AdminNotifier;
 import is.pig.minecraft.admin.util.IgniterAccessor;
 import is.pig.minecraft.lib.util.telemetry.formatter.PiggyTelemetryFormatter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleOptions;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 @Mixin(Explosion.class)
 public abstract class ExplosionMixin {
     @Shadow @Final private Level level;
+    @Shadow public abstract List<BlockPos> getToBlow();
     
     @Shadow @Final @Nullable private DamageSource damageSource;
     @Shadow @Final @Nullable private Entity source;
@@ -101,56 +102,30 @@ public abstract class ExplosionMixin {
         }
 
         BlockPos pos = new BlockPos((int) effectiveX, (int) effectiveY, (int) effectiveZ);
-        String worldId = world.dimension().location().toString();
-        String details = "Explosion (radius " + effectiveRadius + ") - Source: " + causeName;
+        String blockPosStr = pos.getX() + ", " + pos.getY() + ", " + pos.getZ();
 
-        HistoryEntry entry;
-        if (playerCause != null) {
-            String fullAction = playerCause.getName().getString() + " caused Explosion";
-            is.pig.minecraft.admin.storage.BlameData blame = new is.pig.minecraft.admin.storage.BlameData(playerCause.getUUID(), playerCause.getName().getString(), fullAction, worldId, pos);
-
-            String tag = "EXPLOSION";
-            if (effectiveSource != null) {
-                tag = effectiveSource.getType().getDescription().getString().toUpperCase().replace(" ", "_");
-                if (effectiveSource instanceof PrimedTnt) tag = "TNT";
-                if (effectiveSource instanceof Creeper) tag = "CREEPER";
-            }
-            
-            entry = HistoryManager.logExplosion(playerCause, blame, tag);
-        } else {
-            entry = HistoryManager.logExplosion(causeName, details, worldId, pos);
-            // Also notify admins for non-player explosions to ensure visibility
-            AdminNotifier.notifyAdmins(null, "EXPLOSION", pos, Component.literal("Natural Explosion - Source: " + causeName));
-        }
-
-        if (entry != null) {
-            entry.putMetadata("radius", String.valueOf(effectiveRadius));
-            entry.putMetadata("source", causeName);
-            
+        // 1. Emit structured telemetry event
+        ExplosionDetonationEvent detEvent = new ExplosionDetonationEvent(
+                causeName,
+                blockPosStr,
+                effectiveRadius,
+                getToBlow().size(),
+                world.getServer().getTickCount()
+        );
+        is.pig.minecraft.lib.util.telemetry.StructuredEventDispatcher.getInstance().dispatch(detEvent);
+        
+        // 2. Logging and nearby collection only if there's damage or notable source
+        if (playerCause != null || effectiveRadius > 3.0) {
             List<ServerPlayer> nearbyPlayers = world.getPlayers(p -> p.distanceToSqr(effectiveX, effectiveY, effectiveZ) < 100 * 100);
+            
+            PiggyAdmin.LOGGER.info("[Explosion] {} detonated at {} with radius {}", causeName, blockPosStr, effectiveRadius);
+            
             if (!nearbyPlayers.isEmpty()) {
                 String formattedPlayers = nearbyPlayers.stream()
                     .map(p -> String.format("%s (%.1fm)", p.getName().getString(), Math.sqrt(p.distanceToSqr(effectiveX, effectiveY, effectiveZ))))
                     .collect(Collectors.joining(", "));
-                entry.putMetadata("nearby_players", formattedPlayers);
-                
-                for (ServerPlayer p : nearbyPlayers) {
-                    entry.putMetadata("player_data_" + p.getName().getString(), PiggyTelemetryFormatter.formatPlayer(p));
-                }
+                PiggyAdmin.LOGGER.info("Nearby players: {}", formattedPlayers);
             }
-
-            List<ServerPlayer> victims = nearbyPlayers.stream()
-                .filter(p -> p.isDeadOrDying() || p.deathTime > 0)
-                .collect(Collectors.toList());
-            
-            if (!victims.isEmpty()) {
-                String victimNames = victims.stream()
-                    .map(p -> p.getName().getString())
-                    .collect(Collectors.joining(", "));
-                entry.putMetadata("victims", victimNames);
-            }
-            
-            HistoryManager.save();
         }
     }
 }

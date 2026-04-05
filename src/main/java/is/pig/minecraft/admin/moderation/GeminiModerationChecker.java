@@ -110,9 +110,11 @@ public class GeminiModerationChecker implements ModerationChecker {
                         String categoryStr = moderation.get("category").getAsString();
                         ModerationCategory category = ModerationCategory.fromString(categoryStr);
                         
+                        double confidence = moderation.has("confidence") ? moderation.get("confidence").getAsDouble() : 1.0;
+                        
                         if (category != ModerationCategory.SAFE) {
-                            LOGGER.info("Gemini flagged message from {} as {}: {}", player.getName().getString(), category, message);
-                            return ModerationResult.blocked(category, "Gemini AI: " + category.getDisplayName());
+                            LOGGER.info("Gemini flagged message from {} as {} (Confidence: {}): {}", player.getName().getString(), category, confidence, message);
+                            return ModerationResult.blocked(category, "Gemini AI: " + category.getDisplayName(), confidence);
                         }
                     }
                 }
@@ -139,7 +141,7 @@ public class GeminiModerationChecker implements ModerationChecker {
     private String buildSystemPrompt() {
         StringBuilder sb = new StringBuilder(PiggyServerConfig.getInstance().geminiSystemPrompt);
         sb.append("\n\nReply ONLY with a JSON object:\n");
-        sb.append("{\"category\": \"CATEGORY_NAME\", \"reason\": \"brief explanation\"}\n\n");
+        sb.append("{\"category\": \"CATEGORY_NAME\", \"reason\": \"brief explanation\", \"confidence\": 0.95}\n\n");
         sb.append("Categories:\n");
         for (ModerationCategory cat : ModerationCategory.values()) {
             sb.append("- ").append(cat.name()).append("\n");

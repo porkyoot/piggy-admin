@@ -1,6 +1,5 @@
 package is.pig.minecraft.admin.mixin;
 
-import is.pig.minecraft.admin.storage.HistoryManager;
 import is.pig.minecraft.admin.util.LavaBlameManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
@@ -25,8 +24,7 @@ public class BucketItemMixin {
             // In vanilla, BucketItem has a 'content' field (Fluid)
             // But we can just check if the item is Items.LAVA_BUCKET
             if (item.asItem() == Items.LAVA_BUCKET) {
-                LavaBlameManager.setOwner(pos, serverPlayer.getUUID());
-                HistoryManager.logLava(serverPlayer, pos);
+                LavaBlameManager.recordLava(serverPlayer, pos);
             }
         }
     }

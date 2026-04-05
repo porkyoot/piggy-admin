@@ -1,9 +1,7 @@
 package is.pig.minecraft.admin.mixin;
 
-import is.pig.minecraft.admin.storage.BlameData;
-import is.pig.minecraft.admin.storage.HistoryManager;
-import net.minecraft.core.BlockPos;
 import is.pig.minecraft.admin.util.FireBlameManager;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.FlintAndSteelItem;
@@ -19,16 +17,31 @@ public class FlintAndSteelItemMixin {
     @Inject(method = "useOn", at = @At("RETURN"))
     private void onUseOn(UseOnContext context, CallbackInfoReturnable<InteractionResult> cir) {
         if (cir.getReturnValue().consumesAction() && context.getPlayer() instanceof ServerPlayer player) {
-            BlockPos pos = context.getClickedPos().relative(context.getClickedFace());
+            BlockPos pos = context.getClickedPos();
+            boolean isTnt = player.level().getBlockState(pos).is(net.minecraft.world.level.block.Blocks.TNT);
+            BlockPos firePos = isTnt ? pos : pos.relative(context.getClickedFace());
+            
             String worldId = player.serverLevel().dimension().location().toString();
-            String action = player.getName().getString() + " ignited fire";
+            String blockPosStr = String.format("%d, %d, %d", firePos.getX(), firePos.getY(), firePos.getZ());
+            String playerPosStr = String.format("%.1f, %.1f, %.1f", player.getX(), player.getY(), player.getZ());
 
-            // Record initial blame
-            FireBlameManager.setOwner(pos, player.getUUID());
-
-            // Log to history (now also notifies admins)
-            BlameData blame = new BlameData(player.getUUID(), player.getName().getString(), action, worldId, pos);
-            HistoryManager.logFire(player, blame);
+            if (isTnt) {
+                // TNT Ignition: Emit specialized THREAT event
+                is.pig.minecraft.admin.telemetry.HazardousPlacementEvent event = new is.pig.minecraft.admin.telemetry.HazardousPlacementEvent(
+                        player.getName().getString(),
+                        "TNT (Manual Ignition)",
+                        blockPosStr,
+                        worldId,
+                        playerPosStr,
+                        player.getServer().getTickCount(),
+                        is.pig.minecraft.admin.telemetry.HazardousPlacementEvent.PlacementType.THREAT
+                );
+                is.pig.minecraft.lib.util.telemetry.StructuredEventDispatcher.getInstance().dispatch(event);
+                is.pig.minecraft.admin.util.AdminNotifier.broadcastAdminEvent(event);
+            } else {
+                // Standard Fire: Use regular blame manager
+                FireBlameManager.recordFire(player, firePos, player.getName().getString() + " ignited fire");
+            }
         }
     }
 }

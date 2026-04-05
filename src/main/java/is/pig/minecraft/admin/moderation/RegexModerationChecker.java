@@ -53,13 +53,13 @@ public class RegexModerationChecker implements ModerationChecker {
             for (CompiledRule rule : compiledRules) {
                 if (rule.pattern.matcher(message).find()) {
                     LOGGER.debug("Regex match found for category {}: {}", rule.category, message);
-                    return ModerationResult.blocked(rule.category, "Regex match: " + rule.category);
+                    return ModerationResult.blocked(rule.category, "Regex match: " + rule.category, 1.0);
                 }
             }
             for (CompiledRule rule : wordListRules) {
                  if (rule.pattern.matcher(message).find()) {
                      LOGGER.debug("Word-list match found: {}", message);
-                     return ModerationResult.blocked(rule.category, "Word-list match");
+                     return ModerationResult.blocked(rule.category, "Word-list match", 1.0);
                  }
             }
             return ModerationResult.SAFE;

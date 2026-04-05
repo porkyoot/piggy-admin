@@ -5,28 +5,68 @@ import is.pig.minecraft.admin.network.SyncModerationPayload;
 import is.pig.minecraft.admin.network.UpdateAdminConfigPayload;
 import is.pig.minecraft.admin.storage.HistoryManager;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents; // Import
+import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
-// import net.fabricmc.loader.api.FabricLoader;
-// import net.minecraft.server.players.ServerOpListEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.minecraft.server.MinecraftServer;
 
 public class PiggyAdmin implements ModInitializer {
     public static final String MOD_ID = "piggy-admin";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+    private static MinecraftServer server;
 
     @Override
     public void onInitialize() {
         LOGGER.info("Ehlo from Piggy Admin!");
 
         is.pig.minecraft.admin.config.PiggyServerConfig.load();
-        HistoryManager.load();
-
-        ServerLifecycleEvents.SERVER_STARTING.register(server -> {
+        HistoryManager.init();
+        is.pig.minecraft.admin.util.AdminNotifier.register();
+        
+        ServerLifecycleEvents.SERVER_STARTING.register(s -> {
+            server = s;
             is.pig.minecraft.admin.moderation.WordListRegistry.initialize(is.pig.minecraft.admin.config.PiggyServerConfig.getInstance());
         });
+        
+        // Register administrative telemetry enrichers
+        is.pig.minecraft.lib.util.telemetry.StructuredEventDispatcher.getInstance()
+            .registerEnricher(new is.pig.minecraft.admin.telemetry.AdminContextEnricher());
+
+        // Register structured telemetry translators
+        is.pig.minecraft.lib.util.telemetry.EventTranslatorRegistry.getInstance().register(
+                is.pig.minecraft.admin.telemetry.HazardousPlacementEvent.class,
+                (event, i18n) -> {
+                    var e = (is.pig.minecraft.admin.telemetry.HazardousPlacementEvent) event;
+                    return switch (e.type()) {
+                        case ARSON -> String.format("[ARSON] Player %s ignited %s at %s.", 
+                                e.playerName(), e.targetName(), e.blockPos());
+                        case HAZARD -> String.format("[HAZARD] Player %s spilled %s at %s.", 
+                                e.playerName(), e.targetName(), e.blockPos());
+                        case THREAT -> String.format("[THREAT] Player %s armed a %s charge at %s.", 
+                                e.playerName(), e.targetName(), e.blockPos());
+                    };
+                }
+        );
+
+        is.pig.minecraft.lib.util.telemetry.EventTranslatorRegistry.getInstance().register(
+                is.pig.minecraft.admin.telemetry.ExplosionDetonationEvent.class,
+                (event, i18n) -> {
+                    var e = (is.pig.minecraft.admin.telemetry.ExplosionDetonationEvent) event;
+                    return String.format("[IMPACT] Detonation by %s at %s. Blast magnitude: %.1f. Loss: %d blocks.", 
+                            e.sourceEntity(), e.blockPos(), e.explosionRadius(), e.blocksDestroyedCount());
+                }
+        );
+
+        is.pig.minecraft.lib.util.telemetry.EventTranslatorRegistry.getInstance().register(
+                is.pig.minecraft.admin.telemetry.ChatModerationEvent.class,
+                (event, i18n) -> {
+                    var e = (is.pig.minecraft.admin.telemetry.ChatModerationEvent) event;
+                    return i18n.translate("piggy.admin.telemetry.chat_blocked", 
+                            e.playerName(), e.moderationCategory(), e.confidenceScore());
+                }
+        );
 
         net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry.playS2C().register(
                 is.pig.minecraft.lib.network.SyncConfigPayload.TYPE,
@@ -35,14 +75,6 @@ public class PiggyAdmin implements ModInitializer {
         UpdateAdminConfigPayload.register();
 
         net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-            // if (FabricLoader.getInstance().isDevelopmentEnvironment()) {
-            // if (!server.getPlayerList().isOp(handler.getPlayer().getGameProfile())) {
-            // server.getPlayerList().getOps().add(new
-            // ServerOpListEntry(handler.getPlayer().getGameProfile(), 4, false));
-            // server.getCommands().sendCommands(handler.getPlayer());
-            // }
-            // }
-
             boolean allowCheats = is.pig.minecraft.admin.config.PiggyServerConfig.getInstance().allowCheats;
             java.util.Map<String, Boolean> features = is.pig.minecraft.admin.config.PiggyServerConfig
                     .getInstance().features;
@@ -123,12 +155,9 @@ public class PiggyAdmin implements ModInitializer {
             }
 
             LOGGER.info("Intercepting message for moderation: {}", message.signedContent());
-            // Intercept and handle asynchronously
             is.pig.minecraft.admin.moderation.ModerationEngine.getInstance().processMessage(sender, message, params);
             return false;
         });
-
-
 
         ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
             if (sender != null) {
@@ -136,7 +165,6 @@ public class PiggyAdmin implements ModInitializer {
             }
         });
 
-        // --- REGISTER XRAY DETECTOR ---
         is.pig.minecraft.admin.anticheat.OreCacheManager.INSTANCE.registerEvents();
         is.pig.minecraft.admin.anticheat.IAntiCheatRule xrayDetector = new XRayDetector();
         is.pig.minecraft.admin.anticheat.IAntiCheatRule hybridDetector = new is.pig.minecraft.admin.anticheat.HybridXRayDetector();
@@ -149,5 +177,12 @@ public class PiggyAdmin implements ModInitializer {
                 }
             }
         });
+    }
+
+    /**
+     * @return The active MinecraftServer instance, or null if not yet started.
+     */
+    public static MinecraftServer getServer() {
+        return server;
     }
 }

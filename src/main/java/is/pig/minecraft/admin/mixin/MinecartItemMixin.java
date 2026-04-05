@@ -24,10 +24,28 @@ public class MinecartItemMixin {
             if (this.type == AbstractMinecart.Type.TNT) {
                 BlockPos pos = context.getClickedPos();
                 String worldId = player.serverLevel().dimension().location().toString();
-                String action = player.getName().getString() + " placed TNT Minecart";
+                String blockPosStr = pos.getX() + ", " + pos.getY() + ", " + pos.getZ();
+                String playerPosStr = String.format("%.1f, %.1f, %.1f", player.getX(), player.getY(), player.getZ());
 
-                is.pig.minecraft.admin.storage.BlameData blame = new is.pig.minecraft.admin.storage.BlameData(player.getUUID(), player.getName().getString(), action, worldId, pos);
-                HistoryManager.logExplosion((net.minecraft.server.level.ServerPlayer) context.getPlayer(), blame, "TNT_MINECART");
+                // 1. Log to legacy history
+                is.pig.minecraft.admin.storage.BlameData blame = new is.pig.minecraft.admin.storage.BlameData(
+                    player.getUUID(), player.getName().getString(), player.getName().getString() + " placed TNT Minecart", worldId, pos);
+                HistoryManager.logExplosion(player, blame, "TNT_MINECART");
+
+                // 2. Emit structured telemetry event
+                is.pig.minecraft.admin.telemetry.HazardousPlacementEvent event = new is.pig.minecraft.admin.telemetry.HazardousPlacementEvent(
+                    player.getName().getString(),
+                    "TNT Minecart",
+                    blockPosStr,
+                    worldId,
+                    playerPosStr,
+                    player.getServer().getTickCount(),
+                    is.pig.minecraft.admin.telemetry.HazardousPlacementEvent.PlacementType.THREAT
+                );
+                is.pig.minecraft.lib.util.telemetry.StructuredEventDispatcher.getInstance().dispatch(event);
+
+                // 3. Trigger interactive admin notification
+                is.pig.minecraft.admin.util.AdminNotifier.broadcastAdminEvent(event);
             }
         }
     }

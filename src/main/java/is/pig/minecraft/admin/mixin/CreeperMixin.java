@@ -20,9 +20,26 @@ public abstract class CreeperMixin implements IgniterAccessor {
 
     @Inject(method = "mobInteract", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/monster/Creeper;ignite()V"))
     private void onIgnite(Player player, InteractionHand hand, CallbackInfoReturnable<InteractionResult> cir) {
-        System.out.println("[PiggyAdmin] Creeper ignited by player: " + player.getName().getString());
         if (player instanceof ServerPlayer serverPlayer) {
             this.piggy$igniter = serverPlayer;
+            
+            // Emit proactive telemetry for manual priming
+            Creeper creeper = (Creeper) (Object) this;
+            String worldId = serverPlayer.serverLevel().dimension().location().toString();
+            String blockPosStr = String.format("%d, %d, %d", creeper.getBlockX(), creeper.getBlockY(), creeper.getBlockZ());
+            String playerPosStr = String.format("%.1f, %.1f, %.1f", serverPlayer.getX(), serverPlayer.getY(), serverPlayer.getZ());
+            
+            is.pig.minecraft.admin.telemetry.HazardousPlacementEvent event = new is.pig.minecraft.admin.telemetry.HazardousPlacementEvent(
+                    serverPlayer.getName().getString(),
+                    "Ignited Creeper (Manual Sabotage)",
+                    blockPosStr,
+                    worldId,
+                    playerPosStr,
+                    serverPlayer.getServer().getTickCount(),
+                    is.pig.minecraft.admin.telemetry.HazardousPlacementEvent.PlacementType.THREAT
+            );
+            is.pig.minecraft.lib.util.telemetry.StructuredEventDispatcher.getInstance().dispatch(event);
+            is.pig.minecraft.admin.util.AdminNotifier.broadcastAdminEvent(event);
         }
     }
 

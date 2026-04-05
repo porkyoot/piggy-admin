@@ -1,6 +1,11 @@
 package is.pig.minecraft.admin.util;
 
+import is.pig.minecraft.admin.storage.BlameData;
+import is.pig.minecraft.admin.storage.HistoryManager;
+
+
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
 
 import java.util.Map;
 import java.util.UUID;
@@ -14,6 +19,38 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class FireBlameManager {
     private static final Map<Long, UUID> fireOwners = new ConcurrentHashMap<>();
+
+    /**
+     * Records a potential griefing incident involving fire and attributes blame.
+     * @param player the player responsible
+     * @param pos the block position
+     * @param action a description of the action (e.g. "used Fire Charge")
+     */
+    public static void recordFire(ServerPlayer player, BlockPos pos, String action) {
+        setOwner(pos, player.getUUID());
+        
+        String worldId = player.serverLevel().dimension().location().toString();
+        BlameData blame = new BlameData(player.getUUID(), player.getName().getString(), action, worldId, pos);
+        
+        // Log to persistent JSON history
+        HistoryManager.logFire(player, blame);
+        
+        // Emit structured telemetry event
+        String blockPosStr = String.format("%d, %d, %d", pos.getX(), pos.getY(), pos.getZ());
+        String playerPosStr = String.format("%.1f, %.1f, %.1f", player.getX(), player.getY(), player.getZ());
+        
+        is.pig.minecraft.admin.telemetry.HazardousPlacementEvent event = new is.pig.minecraft.admin.telemetry.HazardousPlacementEvent(
+                player.getName().getString(),
+                "Fire",
+                blockPosStr,
+                worldId,
+                playerPosStr,
+                player.getServer().getTickCount(),
+                is.pig.minecraft.admin.telemetry.HazardousPlacementEvent.PlacementType.ARSON
+        );
+        is.pig.minecraft.lib.util.telemetry.StructuredEventDispatcher.getInstance().dispatch(event);
+        is.pig.minecraft.admin.util.AdminNotifier.broadcastAdminEvent(event);
+    }
 
     /**
      * Records the owner of a fire block at the given position.

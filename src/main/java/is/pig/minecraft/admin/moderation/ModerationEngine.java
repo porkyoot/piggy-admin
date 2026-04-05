@@ -13,7 +13,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 public class ModerationEngine {
-    private static final is.pig.minecraft.lib.util.PiggyLog LOGGER = new is.pig.minecraft.lib.util.PiggyLog("piggy-admin", "ModerationEngine");
     private static ModerationEngine INSTANCE;
     private final List<ModerationChecker> checkers = new ArrayList<>();
 
@@ -60,7 +59,18 @@ public class ModerationEngine {
             if (result.blocked()) {
                 is.pig.minecraft.lib.util.PiggyMessenger.sendError(player, "piggy.admin.moderation.blocked");
                 
-                LOGGER.info("Blocked ({}) from {}: {}", result.category(), player.getName().getString(), content);
+                // Emit structured telemetry
+                is.pig.minecraft.admin.telemetry.ChatModerationEvent event = new is.pig.minecraft.admin.telemetry.ChatModerationEvent(
+                        player.getName().getString(),
+                        content,
+                        result.category().toString(),
+                        result.confidenceScore(),
+                        "BLOCKED",
+                        String.format("%.1f, %.1f, %.1f", player.getX(), player.getY(), player.getZ()),
+                        player.getServer().getTickCount()
+                );
+                is.pig.minecraft.lib.util.telemetry.StructuredEventDispatcher.getInstance().dispatch(event);
+                is.pig.minecraft.admin.util.AdminNotifier.broadcastAdminEvent(event);
                 
                 // Log to history for /logs command
                 HistoryManager.logBlock(player, content, result.category(), player.serverLevel().dimension().location().toString(), player.blockPosition());
@@ -100,7 +110,19 @@ public class ModerationEngine {
         return checkChain.thenApply(result -> {
             if (result.blocked()) {
                 is.pig.minecraft.lib.util.PiggyMessenger.sendError(player, "piggy.admin.moderation.blocked");
-                LOGGER.info("Blocked Sign ({}) from {}: {}", result.category(), player.getName().getString(), content);
+                
+                // Emit structured telemetry for sign block
+                is.pig.minecraft.admin.telemetry.ChatModerationEvent event = new is.pig.minecraft.admin.telemetry.ChatModerationEvent(
+                        player.getName().getString(),
+                        content,
+                        result.category().toString(),
+                        result.confidenceScore(),
+                        "BLOCKED_SIGN",
+                        String.format("%.1f, %.1f, %.1f", player.getX(), player.getY(), player.getZ()),
+                        player.getServer().getTickCount()
+                );
+                is.pig.minecraft.lib.util.telemetry.StructuredEventDispatcher.getInstance().dispatch(event);
+                is.pig.minecraft.admin.util.AdminNotifier.broadcastAdminEvent(event);
                 
                 HistoryManager.logBlock(player, content, result.category(), player.serverLevel().dimension().location().toString(), pos);
                 return false;

@@ -19,10 +19,28 @@ public class EndCrystalItemMixin {
         if (cir.getReturnValue().consumesAction() && context.getPlayer() instanceof ServerPlayer player) {
             BlockPos pos = context.getClickedPos().relative(context.getClickedFace());
             String worldId = player.serverLevel().dimension().location().toString();
-            String action = player.getName().getString() + " placed End Crystal";
+            String blockPosStr = pos.getX() + ", " + pos.getY() + ", " + pos.getZ();
+            String playerPosStr = String.format("%.1f, %.1f, %.1f", player.getX(), player.getY(), player.getZ());
 
-            is.pig.minecraft.admin.storage.BlameData blame = new is.pig.minecraft.admin.storage.BlameData(player.getUUID(), player.getName().getString(), action, worldId, pos);
-            HistoryManager.logExplosion((net.minecraft.server.level.ServerPlayer) context.getPlayer(), blame, "END_CRYSTAL");
+            // 1. Log to legacy history for backward compatibility with /blame
+            is.pig.minecraft.admin.storage.BlameData blame = new is.pig.minecraft.admin.storage.BlameData(
+                player.getUUID(), player.getName().getString(), player.getName().getString() + " placed End Crystal", worldId, pos);
+            HistoryManager.logExplosion(player, blame, "END_CRYSTAL");
+
+            // 2. Emit structured telemetry event
+            is.pig.minecraft.admin.telemetry.HazardousPlacementEvent event = new is.pig.minecraft.admin.telemetry.HazardousPlacementEvent(
+                player.getName().getString(),
+                "End Crystal",
+                blockPosStr,
+                worldId,
+                playerPosStr,
+                player.getServer().getTickCount(),
+                is.pig.minecraft.admin.telemetry.HazardousPlacementEvent.PlacementType.THREAT
+            );
+            is.pig.minecraft.lib.util.telemetry.StructuredEventDispatcher.getInstance().dispatch(event);
+
+            // 3. Trigger interactive admin notification
+            is.pig.minecraft.admin.util.AdminNotifier.broadcastAdminEvent(event);
         }
     }
 }
