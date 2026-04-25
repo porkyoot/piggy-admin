@@ -122,6 +122,12 @@ public class HistoryManager {
             .orElse("No forensic data found for this sign.");
     }
     
+    public static void clearHistory() {
+        if (moderationStore != null) {
+            moderationStore.clear();
+        }
+    }
+    
     // --- Legacy Compatibility Wrappers (Delegates to Unified Event Dispatcher) ---
 
     @Deprecated

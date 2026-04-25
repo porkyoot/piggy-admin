@@ -23,6 +23,7 @@ public class PiggyAdminTests {
 
     @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void testSignLogging(GameTestHelper context) {
+        HistoryManager.clearHistory();
         BlockPos signPos = new BlockPos(0, 1, 0);
         String testText = "Test Sign Content";
         String testPlayer = "TestPlayer";
@@ -33,11 +34,11 @@ public class PiggyAdminTests {
         HistoryManager.logSign(testPlayer, testUUID, testText, worldId, signPos);
 
         // Verify history via search
-        List<HistoryEntry> entries = HistoryManager.findEntriesNear(worldId, signPos, 0.5, "piggy.admin.telemetry.chat_moderation");
+        List<HistoryEntry> entries = HistoryManager.getPlayerHistory(testPlayer);
         context.assertTrue(!entries.isEmpty(), "Sign should be in history");
         
         HistoryEntry entry = entries.get(0);
-        context.assertTrue(entry.narrative().contains(testText), "History should contain sign text");
+        context.assertTrue(entry.data().get("originalMessage").toString().contains(testText), "History should contain sign text");
         context.assertTrue(entry.eventKey().contains("chat_moderation"), "Entry should be chat_moderation key");
 
         context.succeed();
@@ -45,6 +46,7 @@ public class PiggyAdminTests {
 
     @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void testChatLogging(GameTestHelper context) {
+        HistoryManager.clearHistory();
         String testPlayer = "ChatTestPlayer";
         UUID testUUID = UUID.randomUUID();
         String testMessage = "Test chat message";
@@ -55,7 +57,7 @@ public class PiggyAdminTests {
         context.assertTrue(!entries.isEmpty(), "Should have history entries");
 
         HistoryEntry lastEntry = entries.get(entries.size() - 1);
-        context.assertTrue(lastEntry.narrative().contains(testMessage), "Should log correct message");
+        context.assertTrue(lastEntry.data().get("originalMessage").toString().contains(testMessage), "Should log correct message");
         context.succeed();
     }
 

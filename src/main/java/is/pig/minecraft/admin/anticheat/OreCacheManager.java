@@ -55,7 +55,7 @@ public class OreCacheManager {
         int maxY;
 
         if (isOverworld) {
-            minY = level.getMinBuildHeight();
+            minY = is.pig.minecraft.lib.util.CompatibilityHelper.getMinBuildHeight(level);
             maxY = 15; // Below Y=16
         } else {
             minY = 8;

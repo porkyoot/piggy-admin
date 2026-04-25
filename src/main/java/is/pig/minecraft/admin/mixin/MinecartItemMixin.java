@@ -16,12 +16,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(MinecartItem.class)
 public class MinecartItemMixin {
 
-    @Shadow public AbstractMinecart.Type type;
-
     @Inject(method = "useOn", at = @At("RETURN"))
     private void onUseOn(UseOnContext context, CallbackInfoReturnable<InteractionResult> cir) {
         if (cir.getReturnValue().consumesAction() && context.getPlayer() instanceof ServerPlayer player) {
-            if (this.type == AbstractMinecart.Type.TNT) {
+            if (context.getItemInHand().is(net.minecraft.world.item.Items.TNT_MINECART)) {
                 BlockPos pos = context.getClickedPos();
                 String worldId = player.serverLevel().dimension().location().toString();
                 String blockPosStr = pos.getX() + ", " + pos.getY() + ", " + pos.getZ();

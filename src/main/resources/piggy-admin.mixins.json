@@ -1,6 +1,7 @@
 {
 	"required": true,
 	"package": "is.pig.minecraft.admin.mixin",
+	"plugin": "is.pig.minecraft.admin.mixin.PiggyAdminMixinPlugin",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
 		"ServerGamePacketListenerImplMixin",
