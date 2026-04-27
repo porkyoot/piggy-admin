@@ -1,6 +1,6 @@
 package is.pig.minecraft.admin.mixin;
 
-import is.pig.minecraft.admin.storage.HistoryManager;
+import is.pig.minecraft.admin.legacy.LegacyMixinCallbacks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
@@ -28,8 +28,7 @@ public class BlockItemMixin {
                 String worldId = player.serverLevel().dimension().location().toString();
                 String action = player.getName().getString() + " placed " + block.getName().getString();
 
-                is.pig.minecraft.admin.storage.BlameData blame = new is.pig.minecraft.admin.storage.BlameData(player.getUUID(), player.getName().getString(), action, worldId, pos);
-                HistoryManager.logExplosion((net.minecraft.server.level.ServerPlayer) context.getPlayer(), blame, isTnt ? "TNT" : "BED");
+                LegacyMixinCallbacks.trigger("explosion_place", player.getUUID(), player.getName().getString(), action, worldId, pos.getX(), pos.getY(), pos.getZ(), isTnt ? "TNT" : "BED");
             }
         }
     }

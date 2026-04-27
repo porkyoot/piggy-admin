@@ -21,7 +21,7 @@ public class PiggyAdmin implements ModInitializer {
     public void onInitialize() {
         LOGGER.info("Ehlo from Piggy Admin!");
 
-        is.pig.minecraft.admin.config.PiggyServerConfig.load();
+        is.pig.minecraft.admin.config.PiggyServerConfig.loadConfig();
         HistoryManager.init();
         is.pig.minecraft.admin.util.AdminNotifier.register();
         
@@ -118,7 +118,7 @@ public class PiggyAdmin implements ModInitializer {
                 config.wordListCacheDays = payload.wordListCacheDays();
                 config.wordListFetchTimeoutSeconds = payload.wordListFetchTimeoutSeconds();
                 
-                is.pig.minecraft.admin.config.PiggyServerConfig.save();
+                is.pig.minecraft.admin.config.PiggyServerConfig.saveConfig();
                 is.pig.minecraft.admin.moderation.ModerationEngine.getInstance().reload();
                 
                 // Broadcast updates to all clients

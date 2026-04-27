@@ -156,7 +156,7 @@ public class PiggyAdminConfigScreenFactory {
                         .build())
 
                 .save(() -> {
-                    PiggyServerConfig.save();
+                    PiggyServerConfig.saveConfig();
                     if (net.minecraft.client.Minecraft.getInstance().level != null && 
                         net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.canSend(is.pig.minecraft.admin.network.UpdateAdminConfigPayload.TYPE)) {
                         

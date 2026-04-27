@@ -19,7 +19,7 @@ public abstract class FlowingFluidMixin {
     private void onFlow(net.minecraft.world.level.LevelAccessor world, BlockPos to, BlockState state, Direction direction, FluidState fluidState, CallbackInfo ci) {
         if ((Object) this instanceof LavaFluid) {
             BlockPos from = to.relative(direction.getOpposite());
-            LavaBlameManager.propagate(from, to);
+            is.pig.minecraft.admin.legacy.LegacyMixinCallbacks.trigger("lava_propagation", from.getX(), from.getY(), from.getZ(), to.getX(), to.getY(), to.getZ());
         }
     }
 }

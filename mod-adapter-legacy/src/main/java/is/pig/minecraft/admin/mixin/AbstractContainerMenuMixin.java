@@ -1,6 +1,6 @@
 package is.pig.minecraft.admin.mixin;
 
-import is.pig.minecraft.admin.storage.HistoryManager;
+import is.pig.minecraft.admin.legacy.LegacyMixinCallbacks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -49,15 +49,7 @@ public abstract class AbstractContainerMenuMixin {
             String action = serverPlayer.getName().getString() + " interacted with " + itemName + " in Dispenser";
 
             COOLDOWNS.put(serverPlayer.getUUID(), now);
-            is.pig.minecraft.admin.storage.BlameData blame = new is.pig.minecraft.admin.storage.BlameData(serverPlayer.getUUID(), serverPlayer.getName().getString(), action, worldId, pos);
-
-            if (targetStack.is(Items.TNT) || targetStack.is(Items.TNT_MINECART)) {
-                HistoryManager.logExplosion(serverPlayer, blame, "TNT");
-            } else if (targetStack.is(Items.LAVA_BUCKET)) {
-                HistoryManager.logLava(serverPlayer, blame);
-            } else if (targetStack.is(Items.FIRE_CHARGE) || targetStack.is(Items.FLINT_AND_STEEL)) {
-                HistoryManager.logFire(serverPlayer, blame);
-            }
+            LegacyMixinCallbacks.trigger("dispenser_interaction", serverPlayer.getUUID(), serverPlayer.getName().getString(), action, worldId, pos.getX(), pos.getY(), pos.getZ(), itemName);
         }
     }
 

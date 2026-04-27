@@ -116,17 +116,17 @@ public class PiggyServerConfig extends PiggyConfigManager<PiggyServerConfig> {
         return INSTANCE;
     }
 
-    public static void load() {
+    public static void loadConfig() {
         getInstance().load();
         
         INSTANCE.ensureAllFeatures();
         INSTANCE.ensureWordListLanguages();
         INSTANCE.moderationRules.removeIf(rule -> rule == null || rule.category == null);
         INSTANCE.ensureDefaultModerationRules();
-        save();
+        saveConfig();
     }
 
-    public static void save() {
+    public static void saveConfig() {
         getInstance().save();
     }
 

@@ -29,17 +29,7 @@ public abstract class CreeperMixin implements IgniterAccessor {
             String blockPosStr = String.format("%d, %d, %d", creeper.getBlockX(), creeper.getBlockY(), creeper.getBlockZ());
             String playerPosStr = String.format("%.1f, %.1f, %.1f", serverPlayer.getX(), serverPlayer.getY(), serverPlayer.getZ());
             
-            is.pig.minecraft.admin.telemetry.HazardousPlacementEvent event = new is.pig.minecraft.admin.telemetry.HazardousPlacementEvent(
-                    serverPlayer.getName().getString(),
-                    "Ignited Creeper (Manual Sabotage)",
-                    blockPosStr,
-                    worldId,
-                    playerPosStr,
-                    serverPlayer.getServer().getTickCount(),
-                    is.pig.minecraft.admin.telemetry.HazardousPlacementEvent.PlacementType.THREAT
-            );
-            is.pig.minecraft.lib.util.telemetry.StructuredEventDispatcher.getInstance().dispatch(event);
-            is.pig.minecraft.admin.util.AdminNotifier.broadcastAdminEvent(event);
+            is.pig.minecraft.admin.legacy.LegacyMixinCallbacks.trigger("hazardous_placement", serverPlayer.getUUID(), serverPlayer.getName().getString(), "Ignited Creeper (Manual Sabotage)", worldId, creeper.getBlockX(), creeper.getBlockY(), creeper.getBlockZ(), serverPlayer.getX(), serverPlayer.getY(), serverPlayer.getZ(), serverPlayer.getServer().getTickCount());
         }
     }
 

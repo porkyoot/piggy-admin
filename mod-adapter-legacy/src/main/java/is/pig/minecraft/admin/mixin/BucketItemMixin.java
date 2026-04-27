@@ -24,7 +24,7 @@ public class BucketItemMixin {
             // In vanilla, BucketItem has a 'content' field (Fluid)
             // But we can just check if the item is Items.LAVA_BUCKET
             if (item.asItem() == Items.LAVA_BUCKET) {
-                LavaBlameManager.recordLava(serverPlayer, pos);
+                is.pig.minecraft.admin.legacy.LegacyMixinCallbacks.trigger("lava_placement", serverPlayer.getUUID(), serverPlayer.getName().getString(), world.dimension().location().toString(), pos.getX(), pos.getY(), pos.getZ());
             }
         }
     }

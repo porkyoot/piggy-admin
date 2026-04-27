@@ -65,7 +65,7 @@ public class PiggyAdminCommand {
         private static int setCheats(CommandContext<CommandSourceStack> context, boolean allow) {
                 PiggyServerConfig config = PiggyServerConfig.getInstance();
                 config.allowCheats = allow;
-                PiggyServerConfig.save();
+                PiggyServerConfig.saveConfig();
 
                 context.getSource().sendSuccess(
                                 () -> Component.literal("Piggy Cheats are now: " + (allow ? "ALLOWED" : "FORBIDDEN")),
@@ -150,7 +150,7 @@ public class PiggyAdminCommand {
 
                 PiggyServerConfig config = PiggyServerConfig.getInstance();
                 config.features.put(featureId, enable);
-                PiggyServerConfig.save();
+                PiggyServerConfig.saveConfig();
 
                 context.getSource().sendSuccess(
                                 () -> Component.literal(
@@ -166,7 +166,7 @@ public class PiggyAdminCommand {
 
 
         private static int reloadConfig(CommandContext<CommandSourceStack> context) {
-                PiggyServerConfig.load();
+                PiggyServerConfig.loadConfig();
                 is.pig.minecraft.admin.moderation.ModerationEngine.getInstance().reload();
                 syncToAllPlayers(context);
                 context.getSource().sendSuccess(() -> Component.literal("Piggy Admin config reloaded from disk and synced."), true);

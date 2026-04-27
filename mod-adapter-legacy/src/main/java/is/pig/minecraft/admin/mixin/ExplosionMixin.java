@@ -104,28 +104,6 @@ public abstract class ExplosionMixin {
         BlockPos pos = new BlockPos((int) effectiveX, (int) effectiveY, (int) effectiveZ);
         String blockPosStr = pos.getX() + ", " + pos.getY() + ", " + pos.getZ();
 
-        // 1. Emit structured telemetry event
-        ExplosionDetonationEvent detEvent = new ExplosionDetonationEvent(
-                causeName,
-                blockPosStr,
-                effectiveRadius,
-                getToBlow().size(),
-                world.getServer().getTickCount()
-        );
-        is.pig.minecraft.lib.util.telemetry.StructuredEventDispatcher.getInstance().dispatch(detEvent);
-        
-        // 2. Logging and nearby collection only if there's damage or notable source
-        if (playerCause != null || effectiveRadius > 3.0) {
-            List<ServerPlayer> nearbyPlayers = world.getPlayers(p -> p.distanceToSqr(effectiveX, effectiveY, effectiveZ) < 100 * 100);
-            
-            PiggyAdmin.LOGGER.info("[Explosion] {} detonated at {} with radius {}", causeName, blockPosStr, effectiveRadius);
-            
-            if (!nearbyPlayers.isEmpty()) {
-                String formattedPlayers = nearbyPlayers.stream()
-                    .map(p -> String.format("%s (%.1fm)", p.getName().getString(), Math.sqrt(p.distanceToSqr(effectiveX, effectiveY, effectiveZ))))
-                    .collect(Collectors.joining(", "));
-                PiggyAdmin.LOGGER.info("Nearby players: {}", formattedPlayers);
-            }
-        }
+        is.pig.minecraft.admin.legacy.LegacyMixinCallbacks.trigger("explosion_detonation", causeName, blockPosStr, effectiveRadius, getToBlow().size(), world.getServer().getTickCount(), playerCause != null ? playerCause.getUUID() : null);
     }
 }
