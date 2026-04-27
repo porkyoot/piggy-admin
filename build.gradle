@@ -1,33 +1,31 @@
-base {
-    archivesName = "piggy-admin"
+plugins {
+    id 'fabric-loom' version '1.17.0-alpha.7' apply false
 }
 
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'maven-publish'
 
-
-fabricApi {
-    configureDataGeneration {
-        client = true
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
     }
-    
-    // Configure GameTest framework
-    configureTests {
-        createSourceSet = true  // Creates src/gametest/java
-        modId = "piggy-admin-test"
-        eula = true  // Accept EULA for GameTest server
+
+    tasks.withType(JavaCompile).configureEach {
+        it.options.release = 21
     }
-}
 
-dependencies {
-    modImplementation "dev.isxander:yet-another-config-lib:${project.yacl_version}"
-    modImplementation "com.terraformersmc:modmenu:${project.modmenu_version}"
-    
-    implementation project(path: ':piggy-lib', configuration: 'namedElements')
+    group = "is.pig.minecraft"
+    version = "2.0.1"
 
-    testImplementation platform("org.junit:junit-bom:5.10.0")
-    testImplementation "org.junit.jupiter:junit-jupiter"
-    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
-}
-
-test {
-    useJUnitPlatform()
+    repositories {
+        mavenCentral()
+        maven { url = 'https://maven.fabricmc.net/' }
+        maven { url = 'https://maven.isxander.dev/releases' }
+        maven {
+            name = "Terraformers"
+            url = "https://maven.terraformersmc.com/"
+        }
+    }
 }

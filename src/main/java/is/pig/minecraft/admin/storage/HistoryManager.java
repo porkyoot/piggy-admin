@@ -6,7 +6,8 @@ import com.google.gson.reflect.TypeToken;
 import is.pig.minecraft.admin.PiggyAdmin;
 import is.pig.minecraft.lib.util.telemetry.JsonHistoryStore;
 import is.pig.minecraft.lib.util.telemetry.StructuredEvent;
-import is.pig.minecraft.lib.util.telemetry.StructuredEventDispatcher;
+import is.pig.minecraft.lib.util.telemetry.PiggyEventDispatcher;
+
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.BlockPos;
 
@@ -33,7 +34,8 @@ public class HistoryManager {
             event.getEventKey().contains("chat_moderation") ||
             event.getEventKey().contains("xray")
         );
-        moderationStore.register();
+        moderationStore.register("piggy-moderation");
+
         
         // Perform legacy migration
         migrateLegacyData();
@@ -143,7 +145,7 @@ public class HistoryManager {
 
     @Deprecated
     public static HistoryEntry logExplosion(String source, String details, String worldId, BlockPos pos) {
-        StructuredEventDispatcher.getInstance().dispatch(new is.pig.minecraft.admin.telemetry.ExplosionDetonationEvent(source, pos.getX() + "," + pos.getY() + "," + pos.getZ(), 4.0f, 0, 0));
+        PiggyEventDispatcher.getInstance().dispatch(new is.pig.minecraft.admin.telemetry.ExplosionDetonationEvent(source, pos.getX() + "," + pos.getY() + "," + pos.getZ(), 4.0f, 0, 0));
         return null;
     }
 
@@ -180,7 +182,7 @@ public class HistoryManager {
 
     @Deprecated
     public static void logChat(String playerName, java.util.UUID uuid, String message) {
-        StructuredEventDispatcher.getInstance().dispatch(new is.pig.minecraft.admin.telemetry.ChatModerationEvent(playerName, message, "Audited", 1.0, "LOGGED", "(unknown)", 0));
+        PiggyEventDispatcher.getInstance().dispatch(new is.pig.minecraft.admin.telemetry.ChatModerationEvent(playerName, message, "Audited", 1.0, "LOGGED", "(unknown)", 0));
     }
 
     @Deprecated
@@ -200,13 +202,13 @@ public class HistoryManager {
     
     @Deprecated
     public static void logBlock(net.minecraft.server.level.ServerPlayer player, String content, is.pig.minecraft.admin.moderation.ModerationCategory category, String worldId, BlockPos pos) {
-       StructuredEventDispatcher.getInstance().dispatch(new is.pig.minecraft.admin.telemetry.ChatModerationEvent(player.getName().getString(), content, category.name(), 1.0, "BLOCKED", String.format("(%d,%d,%d)", pos.getX(), pos.getY(), pos.getZ()), player.serverLevel().getGameTime()));
+       PiggyEventDispatcher.getInstance().dispatch(new is.pig.minecraft.admin.telemetry.ChatModerationEvent(player.getName().getString(), content, category.name(), 1.0, "BLOCKED", String.format("(%d,%d,%d)", pos.getX(), pos.getY(), pos.getZ()), player.serverLevel().getGameTime()));
     }
 
     private static void dispatchHazard(java.util.UUID uuid, String name, is.pig.minecraft.admin.telemetry.HazardousPlacementEvent.PlacementType type, BlockPos pos, String worldId) {
         String blockPosStr = String.format("%d, %d, %d", pos.getX(), pos.getY(), pos.getZ());
         // For legacy dispatch, we might not have a ServerPlayer object, so we use dummy/best-effort values for playerPos and tick
-        StructuredEventDispatcher.getInstance().dispatch(new is.pig.minecraft.admin.telemetry.HazardousPlacementEvent(
+        PiggyEventDispatcher.getInstance().dispatch(new is.pig.minecraft.admin.telemetry.HazardousPlacementEvent(
             name, 
             "Legacy Replacement", 
             blockPosStr, 

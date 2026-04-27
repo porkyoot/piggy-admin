@@ -14,32 +14,11 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PiggyServerConfig {
-    private static final Logger LOGGER = LoggerFactory.getLogger("PiggyAdmin-Config");
-    private static final File CONFIG_FILE = FabricLoader.getInstance().getConfigDir().resolve("piggy-admin-server.json")
-            .toFile();
-    private static final Gson GSON = new GsonBuilder()
-            .setPrettyPrinting()
-            .registerTypeAdapter(ModerationCategory.class, new com.google.gson.TypeAdapter<ModerationCategory>() {
-                @Override
-                public void write(com.google.gson.stream.JsonWriter out, ModerationCategory value) throws java.io.IOException {
-                    if (value == null) {
-                        out.nullValue();
-                    } else {
-                        out.value(value.name());
-                    }
-                }
+import is.pig.minecraft.lib.config.PiggyConfigManager;
 
-                @Override
-                public ModerationCategory read(com.google.gson.stream.JsonReader in) throws java.io.IOException {
-                    if (in.peek() == com.google.gson.stream.JsonToken.NULL) {
-                        in.nextNull();
-                        return null;
-                    }
-                    return ModerationCategory.fromString(in.nextString());
-                }
-            })
-            .create();
+public class PiggyServerConfig extends PiggyConfigManager<PiggyServerConfig> {
+    private static final java.io.File CONFIG_FILE = FabricLoader.getInstance().getConfigDir().resolve("piggy-admin-server.json")
+            .toFile();
 
     private static PiggyServerConfig INSTANCE;
 
@@ -77,6 +56,43 @@ public class PiggyServerConfig {
     public String geminiSystemPrompt = "You are a Minecraft server moderator. Analyze chat messages for toxicity, hate speech, harassment, sexual content, or dangerous content.";
     public String geminiModel = "gemini-2.5-flash";
 
+    private PiggyServerConfig() {
+        super("piggy-admin-server.json", PiggyServerConfig.class, "PiggyAdmin-Config", createCustomGsonBuilder());
+    }
+
+    private static GsonBuilder createCustomGsonBuilder() {
+        return new GsonBuilder()
+                .registerTypeAdapter(ModerationCategory.class, new com.google.gson.TypeAdapter<ModerationCategory>() {
+                    @Override
+                    public void write(com.google.gson.stream.JsonWriter out, ModerationCategory value) throws java.io.IOException {
+                        if (value == null) {
+                            out.nullValue();
+                        } else {
+                            out.value(value.name());
+                        }
+                    }
+
+                    @Override
+                    public ModerationCategory read(com.google.gson.stream.JsonReader in) throws java.io.IOException {
+                        if (in.peek() == com.google.gson.stream.JsonToken.NULL) {
+                            in.nextNull();
+                            return null;
+                        }
+                        return ModerationCategory.fromString(in.nextString());
+                    }
+                });
+    }
+
+    @Override
+    protected PiggyServerConfig getConfigInstance() {
+        return INSTANCE;
+    }
+
+    @Override
+    protected void setConfigInstance(PiggyServerConfig instance) {
+        INSTANCE = instance;
+    }
+
     public static class ModerationRule {
         public ModerationCategory category; // Enum category
         public String language; // e.g., en, fr, all
@@ -94,23 +110,15 @@ public class PiggyServerConfig {
 
     public static PiggyServerConfig getInstance() {
         if (INSTANCE == null) {
-            load();
+            INSTANCE = new PiggyServerConfig();
+            INSTANCE.load();
         }
         return INSTANCE;
     }
 
     public static void load() {
-        if (CONFIG_FILE.exists()) {
-            try (FileReader reader = new FileReader(CONFIG_FILE)) {
-                INSTANCE = GSON.fromJson(reader, PiggyServerConfig.class);
-            } catch (IOException e) {
-                e.printStackTrace();
-                INSTANCE = new PiggyServerConfig();
-            }
-        } else {
-            INSTANCE = new PiggyServerConfig();
-        }
-
+        getInstance().load();
+        
         INSTANCE.ensureAllFeatures();
         INSTANCE.ensureWordListLanguages();
         INSTANCE.moderationRules.removeIf(rule -> rule == null || rule.category == null);
@@ -119,11 +127,7 @@ public class PiggyServerConfig {
     }
 
     public static void save() {
-        try (FileWriter writer = new FileWriter(CONFIG_FILE)) {
-            GSON.toJson(INSTANCE, writer);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        getInstance().save();
     }
 
     private void ensureAllFeatures() {
@@ -134,7 +138,7 @@ public class PiggyServerConfig {
 
     private void ensureDefaultModerationRules() {
         if (moderationRules.isEmpty()) {
-            LOGGER.info("Adding default moderation rules...");
+            LoggerFactory.getLogger("PiggyAdmin-Config").info("Adding default moderation rules...");
             moderationRules.add(new ModerationRule(ModerationCategory.SWEARS, "all", "(?i)\\b(fuck|shit|asshole)\\b"));
             moderationRules.add(new ModerationRule(ModerationCategory.DOX, "all", "\\b\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\b")); // IP regex
         }
@@ -146,5 +150,4 @@ public class PiggyServerConfig {
             wordListLanguages.putIfAbsent(lang, "en".equals(lang));
         }
     }
-
 }
