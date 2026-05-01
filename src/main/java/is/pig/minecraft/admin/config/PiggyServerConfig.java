@@ -1,8 +1,9 @@
 package is.pig.minecraft.admin.config;
+import is.pig.minecraft.api.*;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import is.pig.minecraft.admin.moderation.ModerationCategory;
+import is.pig.minecraft.api.ModerationCategory;
 import net.fabricmc.loader.api.FabricLoader;
 import is.pig.minecraft.lib.features.CheatFeature;
 import is.pig.minecraft.lib.features.CheatFeatureRegistry;

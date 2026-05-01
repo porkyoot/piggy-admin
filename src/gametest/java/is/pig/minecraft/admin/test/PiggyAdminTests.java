@@ -1,7 +1,8 @@
 package is.pig.minecraft.admin.test;
+import is.pig.minecraft.api.*;
 
 import is.pig.minecraft.admin.config.PiggyServerConfig;
-import is.pig.minecraft.admin.storage.HistoryEntry;
+import is.pig.minecraft.api.HistoryEntry;
 import is.pig.minecraft.admin.storage.HistoryManager;
 import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.core.BlockPos;

@@ -1,8 +1,8 @@
 package is.pig.minecraft.admin.moderation;
+import is.pig.minecraft.api.*;
 
 import is.pig.minecraft.admin.config.PiggyServerConfig;
-import net.minecraft.server.level.ServerPlayer;
-
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RegexModerationChecker implements ModerationChecker {
+public class RegexModerationChecker implements is.pig.minecraft.api.spi.ModerationChecker {
     private static final Logger LOGGER = LoggerFactory.getLogger("RegexModeration");
     private List<CompiledRule> compiledRules = new ArrayList<>();
     private static volatile List<CompiledRule> wordListRules = new ArrayList<>();
@@ -48,7 +48,7 @@ public class RegexModerationChecker implements ModerationChecker {
     }
 
     @Override
-    public CompletableFuture<ModerationResult> check(ServerPlayer player, String message) {
+    public CompletableFuture<ModerationResult> check(UUID playerUuid, String message) {
         return CompletableFuture.supplyAsync(() -> {
             for (CompiledRule rule : compiledRules) {
                 if (rule.pattern.matcher(message).find()) {

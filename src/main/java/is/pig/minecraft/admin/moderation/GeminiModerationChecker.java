@@ -1,9 +1,9 @@
 package is.pig.minecraft.admin.moderation;
+import is.pig.minecraft.api.*;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import is.pig.minecraft.admin.config.PiggyServerConfig;
-import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,11 +13,12 @@ import java.net.URI;
 import java.net.URL;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class GeminiModerationChecker implements ModerationChecker {
+public class GeminiModerationChecker implements is.pig.minecraft.api.spi.ModerationChecker {
     private static final Logger LOGGER = LoggerFactory.getLogger("GeminiModerationChecker");
     private static final Gson GSON = new Gson();
     
@@ -29,7 +30,7 @@ public class GeminiModerationChecker implements ModerationChecker {
     private static final long MIN_INTERVAL_MS = 1000;
 
     @Override
-    public CompletableFuture<ModerationResult> check(ServerPlayer player, String message) {
+    public CompletableFuture<ModerationResult> check(UUID playerUuid, String message) {
         PiggyServerConfig config = PiggyServerConfig.getInstance();
         String apiKey = config.geminiApiKey;
         if (apiKey == null || apiKey.isEmpty() || apiKey.equals("YOUR_GEMINI_API_KEY_HERE")) {
@@ -50,7 +51,7 @@ public class GeminiModerationChecker implements ModerationChecker {
             }
             LAST_REQUEST_TIME.set(now);
 
-            ModerationResult result = callGeminiDirectly(config, message, player);
+            ModerationResult result = callGeminiDirectly(config, message, playerUuid);
             
             // update cache
             if (CACHE.size() > 1000) CACHE.clear();
@@ -60,7 +61,7 @@ public class GeminiModerationChecker implements ModerationChecker {
         });
     }
 
-    private ModerationResult callGeminiDirectly(PiggyServerConfig config, String message, ServerPlayer player) {
+    private ModerationResult callGeminiDirectly(PiggyServerConfig config, String message, UUID playerUuid) {
         try {
             String dynamicSystemPrompt = buildSystemPrompt();
             
@@ -113,7 +114,7 @@ public class GeminiModerationChecker implements ModerationChecker {
                         double confidence = moderation.has("confidence") ? moderation.get("confidence").getAsDouble() : 1.0;
                         
                         if (category != ModerationCategory.SAFE) {
-                            LOGGER.info("Gemini flagged message from {} as {} (Confidence: {}): {}", player.getName().getString(), category, confidence, message);
+                            LOGGER.info("Gemini flagged message from {} as {} (Confidence: {}): {}", playerUuid, category, confidence, message);
                             return ModerationResult.blocked(category, "Gemini AI: " + category.getDisplayName(), confidence);
                         }
                     }

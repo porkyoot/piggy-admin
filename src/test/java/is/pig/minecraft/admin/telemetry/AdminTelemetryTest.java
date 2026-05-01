@@ -1,4 +1,5 @@
 package is.pig.minecraft.admin.telemetry;
+import is.pig.minecraft.api.*;
 
 import org.junit.jupiter.api.Test;
 import java.util.Map;

@@ -1,4 +1,5 @@
 package is.pig.minecraft.admin.config;
+import is.pig.minecraft.api.*;
 
 import dev.isxander.yacl3.api.*;
 import dev.isxander.yacl3.api.controller.TickBoxControllerBuilder;
@@ -46,10 +47,10 @@ public class PiggyAdminConfigScreenFactory {
                                             for (String s : v) {
                                                 String[] parts = s.split("\\|", 3);
                                                 if (parts.length == 3) {
-                                                    is.pig.minecraft.admin.moderation.ModerationCategory category = is.pig.minecraft.admin.moderation.ModerationCategory.fromString(parts[0]);
+                                                    is.pig.minecraft.api.ModerationCategory category = is.pig.minecraft.api.ModerationCategory.fromString(parts[0]);
                                                     config.moderationRules.add(new PiggyServerConfig.ModerationRule(category, parts[1], parts[2]));
                                                 } else if (parts.length == 1 && !parts[0].isEmpty()) {
-                                                     config.moderationRules.add(new PiggyServerConfig.ModerationRule(is.pig.minecraft.admin.moderation.ModerationCategory.OTHER, "all", parts[0]));
+                                                     config.moderationRules.add(new PiggyServerConfig.ModerationRule(is.pig.minecraft.api.ModerationCategory.OTHER, "all", parts[0]));
                                                 }
                                             }
                                         }

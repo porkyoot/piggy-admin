@@ -1,10 +1,11 @@
 package is.pig.minecraft.admin.command;
+import is.pig.minecraft.api.*;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
-import is.pig.minecraft.admin.storage.HistoryEntry;
+import is.pig.minecraft.api.HistoryEntry;
 import is.pig.minecraft.admin.storage.HistoryManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;

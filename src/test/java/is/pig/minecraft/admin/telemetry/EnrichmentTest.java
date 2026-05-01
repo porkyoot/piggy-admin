@@ -1,4 +1,5 @@
 package is.pig.minecraft.admin.telemetry;
+import is.pig.minecraft.api.*;
 
 import is.pig.minecraft.admin.storage.HistoryManager;
 import is.pig.minecraft.lib.util.telemetry.StructuredEventDispatcher;

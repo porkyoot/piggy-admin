@@ -1,4 +1,5 @@
 package is.pig.minecraft.admin.moderation;
+import is.pig.minecraft.api.*;
 
 /**
  * Data carrier for a word list source.

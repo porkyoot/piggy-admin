@@ -1,11 +1,15 @@
 package is.pig.minecraft.admin.storage;
+import is.pig.minecraft.api.*;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import is.pig.minecraft.api.BlameData;
+import is.pig.minecraft.api.HistoryEntry;
+import is.pig.minecraft.api.ModerationCategory;
 import is.pig.minecraft.admin.PiggyAdmin;
 import is.pig.minecraft.lib.util.telemetry.JsonHistoryStore;
-import is.pig.minecraft.lib.util.telemetry.StructuredEvent;
+import is.pig.minecraft.api.StructuredEvent;
 import is.pig.minecraft.lib.util.telemetry.StructuredEventDispatcher;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.BlockPos;
@@ -125,13 +129,13 @@ public class HistoryManager {
     // --- Legacy Compatibility Wrappers (Delegates to Unified Event Dispatcher) ---
 
     @Deprecated
-    public static HistoryEntry logExplosion(is.pig.minecraft.admin.storage.BlameData blame, String tag) {
-        dispatchHazard(blame.authorUuid(), blame.authorName(), is.pig.minecraft.admin.telemetry.HazardousPlacementEvent.PlacementType.THREAT, blame.pos(), blame.worldId());
+    public static HistoryEntry logExplosion(BlameData blame, String tag) {
+        dispatchHazard(blame.authorUuid(), blame.authorName(), is.pig.minecraft.admin.telemetry.HazardousPlacementEvent.PlacementType.THREAT, new BlockPos(blame.pos().x(), blame.pos().y(), blame.pos().z()), blame.worldId());
         return null; // Return null as legacy metadata attachment is now discouraged
     }
 
     @Deprecated
-    public static HistoryEntry logExplosion(net.minecraft.server.level.ServerPlayer player, is.pig.minecraft.admin.storage.BlameData blame, String tag) {
+    public static HistoryEntry logExplosion(net.minecraft.server.level.ServerPlayer player, BlameData blame, String tag) {
         return logExplosion(blame, tag);
     }
 
@@ -142,18 +146,18 @@ public class HistoryManager {
     }
 
     @Deprecated
-    public static void logFire(is.pig.minecraft.admin.storage.BlameData blame) {
-        dispatchHazard(blame.authorUuid(), blame.authorName(), is.pig.minecraft.admin.telemetry.HazardousPlacementEvent.PlacementType.ARSON, blame.pos(), blame.worldId());
+    public static void logFire(BlameData blame) {
+        dispatchHazard(blame.authorUuid(), blame.authorName(), is.pig.minecraft.admin.telemetry.HazardousPlacementEvent.PlacementType.ARSON, new BlockPos(blame.pos().x(), blame.pos().y(), blame.pos().z()), blame.worldId());
     }
 
     @Deprecated
-    public static void logFire(net.minecraft.server.level.ServerPlayer player, is.pig.minecraft.admin.storage.BlameData blame) {
+    public static void logFire(net.minecraft.server.level.ServerPlayer player, BlameData blame) {
         logFire(blame);
     }
 
     @Deprecated
-    public static void logLava(net.minecraft.server.level.ServerPlayer player, is.pig.minecraft.admin.storage.BlameData blame) {
-        dispatchHazard(blame.authorUuid(), blame.authorName(), is.pig.minecraft.admin.telemetry.HazardousPlacementEvent.PlacementType.HAZARD, blame.pos(), blame.worldId());
+    public static void logLava(net.minecraft.server.level.ServerPlayer player, BlameData blame) {
+        dispatchHazard(blame.authorUuid(), blame.authorName(), is.pig.minecraft.admin.telemetry.HazardousPlacementEvent.PlacementType.HAZARD, new BlockPos(blame.pos().x(), blame.pos().y(), blame.pos().z()), blame.worldId());
     }
 
     @Deprecated
@@ -193,7 +197,7 @@ public class HistoryManager {
     }
     
     @Deprecated
-    public static void logBlock(net.minecraft.server.level.ServerPlayer player, String content, is.pig.minecraft.admin.moderation.ModerationCategory category, String worldId, BlockPos pos) {
+    public static void logBlock(net.minecraft.server.level.ServerPlayer player, String content, ModerationCategory category, String worldId, BlockPos pos) {
        StructuredEventDispatcher.getInstance().dispatch(new is.pig.minecraft.admin.telemetry.ChatModerationEvent(player.getName().getString(), content, category.name(), 1.0, "BLOCKED", String.format("(%d,%d,%d)", pos.getX(), pos.getY(), pos.getZ()), player.serverLevel().getGameTime()));
     }
 

@@ -1,4 +1,5 @@
 package is.pig.minecraft.admin.client;
+import is.pig.minecraft.api.*;
 
 import is.pig.minecraft.admin.config.PiggyServerConfig;
 import is.pig.minecraft.admin.network.SyncModerationPayload;
@@ -20,6 +21,11 @@ public class PiggyAdminClient implements ClientModInitializer {
                 config.moderationRules.addAll(payload.rules());
                 // ModerationEngine doesn't exist on client, but we keep config refreshed for UI
             });
+        });
+
+        net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback.EVENT.register((graphics, tickDelta) -> {
+            is.pig.minecraft.admin.ui.AdminHudNotifier.render(graphics);
+            is.pig.minecraft.admin.ui.AntiCheatHudOverlay.render(graphics);
         });
 
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {

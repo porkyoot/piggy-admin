@@ -1,7 +1,8 @@
 package is.pig.minecraft.admin.telemetry;
+import is.pig.minecraft.api.*;
 
 import is.pig.minecraft.lib.util.perf.PerfMonitor;
-import is.pig.minecraft.lib.util.telemetry.StructuredEvent;
+import is.pig.minecraft.api.StructuredEvent;
 import org.slf4j.event.Level;
 
 import java.util.Map;

@@ -1,6 +1,7 @@
 package is.pig.minecraft.admin.util;
+import is.pig.minecraft.api.*;
 
-import is.pig.minecraft.admin.storage.BlameData;
+import is.pig.minecraft.api.BlameData;
 import is.pig.minecraft.admin.storage.HistoryManager;
 
 
@@ -30,7 +31,8 @@ public class FireBlameManager {
         setOwner(pos, player.getUUID());
         
         String worldId = player.serverLevel().dimension().location().toString();
-        BlameData blame = new BlameData(player.getUUID(), player.getName().getString(), action, worldId, pos);
+        BlameData blame = new BlameData(player.getUUID(), player.getName().getString(), action, worldId, new is.pig.minecraft.api.BlockPos(pos.getX(), pos.getY(), pos.getZ()));
+
         
         // Log to persistent JSON history
         HistoryManager.logFire(player, blame);

@@ -1,4 +1,5 @@
 package is.pig.minecraft.admin.command;
+import is.pig.minecraft.api.*;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;

@@ -1,10 +1,14 @@
 package is.pig.minecraft.admin.moderation;
 
+import is.pig.minecraft.api.*;
+import is.pig.minecraft.api.registry.PiggyServiceRegistry;
+import is.pig.minecraft.api.spi.ModerationAdapter;
+import is.pig.minecraft.api.spi.ModerationChecker;
 import is.pig.minecraft.admin.storage.HistoryManager;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.PlayerChatMessage;
-import net.minecraft.network.chat.ChatType;
+import is.pig.minecraft.lib.util.PiggyMessenger;
+import is.pig.minecraft.lib.util.telemetry.StructuredEventDispatcher;
+import is.pig.minecraft.admin.telemetry.ChatModerationEvent;
+import is.pig.minecraft.admin.util.AdminNotifier;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,12 +16,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Platform-agnostic moderation engine.
+ * ZERO net.minecraft imports.
+ */
 public class ModerationEngine {
     private static ModerationEngine INSTANCE;
     private final List<ModerationChecker> checkers = new ArrayList<>();
-
-    // Use identity tracking to prevent infinite loops even if signatures are missing/clashing
-    private final Set<PlayerChatMessage> moderatedMessages = Collections.newSetFromMap(Collections.synchronizedMap(new java.util.IdentityHashMap<>()));
+    private final Set<Object> moderatedMessages = Collections.newSetFromMap(Collections.synchronizedMap(new java.util.IdentityHashMap<>()));
 
     public ModerationEngine() {
         checkers.add(new RegexModerationChecker());
@@ -37,65 +43,57 @@ public class ModerationEngine {
                 regexChecker.reload();
             }
         }
-        is.pig.minecraft.admin.moderation.WordListRegistry.refresh();
+        WordListRegistry.refresh();
         moderatedMessages.clear();
     }
 
-    /**
-     * Checks a message and takes action if needed.
-     */
-    public CompletableFuture<Boolean> processMessage(ServerPlayer player, PlayerChatMessage message, ChatType.Bound params) {
-        String content = message.signedContent();
+    public CompletableFuture<Boolean> processMessage(Object player, Object message, Object params) {
+        ModerationAdapter adapter = PiggyServiceRegistry.getModerationAdapter();
+        String content = adapter.getMessageContent(message);
         
         CompletableFuture<ModerationResult> checkChain = ModerationResult.safeFuture();
         for (ModerationChecker checker : checkers) {
             checkChain = checkChain.thenCompose(result -> {
                 if (result.blocked()) return CompletableFuture.completedFuture(result);
-                return checker.check(player, content);
+                return checker.check(adapter.getPlayerUUID(player), content);
             });
         }
 
         return checkChain.thenApply(result -> {
             if (result.blocked()) {
-                is.pig.minecraft.lib.util.PiggyMessenger.sendError(player, "piggy.admin.moderation.blocked");
+                PiggyMessenger.sendError(player, "piggy.admin.moderation.blocked");
                 
-                // Emit structured telemetry
-                is.pig.minecraft.admin.telemetry.ChatModerationEvent event = new is.pig.minecraft.admin.telemetry.ChatModerationEvent(
-                        player.getName().getString(),
+                ChatModerationEvent event = new ChatModerationEvent(
+                        adapter.getPlayerName(player),
                         content,
                         result.category().toString(),
                         result.confidenceScore(),
                         "BLOCKED",
-                        String.format("%.1f, %.1f, %.1f", player.getX(), player.getY(), player.getZ()),
-                        player.getServer().getTickCount()
+                        "N/A", // Coordinates can be added to adapter if needed
+                        adapter.getServerTickCount(player)
                 );
-                is.pig.minecraft.lib.util.telemetry.StructuredEventDispatcher.getInstance().dispatch(event);
-                is.pig.minecraft.admin.util.AdminNotifier.broadcastAdminEvent(event);
+                StructuredEventDispatcher.getInstance().dispatch(event);
+                AdminNotifier.broadcastAdminEvent(event);
                 
-                // Log to history for /logs command
-                HistoryManager.logBlock(player, content, result.category(), player.serverLevel().dimension().location().toString(), player.blockPosition());
+                // Note: HistoryManager needs decoupling too, but for now we use Object player
+                HistoryManager.logBlock(player, content, result.category(), "N/A", null);
                 
                 return false;
             }
 
-            // Allowed - Mark as moderated to prevent loop
             moderatedMessages.add(message);
+            adapter.broadcastMessage(player, message, params);
             
-            // CRITICAL: Re-broadcast MUST happen on the main server thread
-            player.server.execute(() -> {
-                player.server.getPlayerList().broadcastChatMessage(message, player, params);
-                
-                // Clean up old references to prevent memory leak
-                if (moderatedMessages.size() > 500) {
-                    moderatedMessages.clear(); 
-                }
-            });
+            if (moderatedMessages.size() > 500) {
+                moderatedMessages.clear(); 
+            }
             
             return true;
         });
     }
 
-    public CompletableFuture<Boolean> processSign(ServerPlayer player, String[] lines, BlockPos pos) {
+    public CompletableFuture<Boolean> processSign(Object player, String[] lines, Object pos) {
+        ModerationAdapter adapter = PiggyServiceRegistry.getModerationAdapter();
         String content = String.join(" | ", lines);
         if (content.replace("|", "").trim().isEmpty()) return CompletableFuture.completedFuture(true);
 
@@ -103,39 +101,36 @@ public class ModerationEngine {
         for (ModerationChecker checker : checkers) {
             checkChain = checkChain.thenCompose(result -> {
                 if (result.blocked()) return CompletableFuture.completedFuture(result);
-                return checker.check(player, content);
+                return checker.check(adapter.getPlayerUUID(player), content);
             });
         }
 
         return checkChain.thenApply(result -> {
             if (result.blocked()) {
-                is.pig.minecraft.lib.util.PiggyMessenger.sendError(player, "piggy.admin.moderation.blocked");
+                PiggyMessenger.sendError(player, "piggy.admin.moderation.blocked");
                 
-                // Emit structured telemetry for sign block
-                is.pig.minecraft.admin.telemetry.ChatModerationEvent event = new is.pig.minecraft.admin.telemetry.ChatModerationEvent(
-                        player.getName().getString(),
+                ChatModerationEvent event = new ChatModerationEvent(
+                        adapter.getPlayerName(player),
                         content,
                         result.category().toString(),
                         result.confidenceScore(),
                         "BLOCKED_SIGN",
-                        String.format("%.1f, %.1f, %.1f", player.getX(), player.getY(), player.getZ()),
-                        player.getServer().getTickCount()
+                        "N/A",
+                        adapter.getServerTickCount(player)
                 );
-                is.pig.minecraft.lib.util.telemetry.StructuredEventDispatcher.getInstance().dispatch(event);
-                is.pig.minecraft.admin.util.AdminNotifier.broadcastAdminEvent(event);
+                StructuredEventDispatcher.getInstance().dispatch(event);
+                AdminNotifier.broadcastAdminEvent(event);
                 
-                HistoryManager.logBlock(player, content, result.category(), player.serverLevel().dimension().location().toString(), pos);
+                HistoryManager.logBlock(player, content, result.category(), "N/A", null);
                 return false;
             }
             
-            // Log allowed sign to history
-            HistoryManager.logSign(player, content, player.serverLevel().dimension().location().toString(), pos);
+            HistoryManager.logSign(player, content, "N/A", null);
             return true;
         });
     }
 
-    public boolean isModerated(PlayerChatMessage message) {
-        // Check by object identity
+    public boolean isModerated(Object message) {
         return moderatedMessages.contains(message);
     }
 }

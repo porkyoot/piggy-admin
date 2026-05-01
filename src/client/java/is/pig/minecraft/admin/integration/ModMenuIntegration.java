@@ -1,4 +1,5 @@
 package is.pig.minecraft.admin.integration;
+import is.pig.minecraft.api.*;
 
 import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;

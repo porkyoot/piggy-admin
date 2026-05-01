@@ -1,7 +1,8 @@
 package is.pig.minecraft.admin.network;
+import is.pig.minecraft.api.*;
 
 import is.pig.minecraft.admin.config.PiggyServerConfig;
-import is.pig.minecraft.admin.moderation.ModerationCategory;
+import is.pig.minecraft.api.ModerationCategory;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;

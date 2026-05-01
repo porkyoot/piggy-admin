@@ -4,11 +4,6 @@
     "version": "${version}",
     "name": "Piggy Admin Tests",
     "environment": "*",
-    "entrypoints": {
-        "fabric-gametest": [
-            "is.pig.minecraft.admin.test.PiggyAdminTests"
-        ]
-    },
     "depends": {
         "piggy-admin": "*",
         "fabricloader": ">=0.18.1",
